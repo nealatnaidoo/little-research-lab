@@ -1,6 +1,6 @@
 # Little Research Lab
 
-A modern "Link-in-Bio" style landing page and content management system built with Python and [Flet](https://flet.dev). Features a premium responsive UI, rich content authoring, and secure administration.
+A modern landing page and content management system built with Python and [Flet](https://flet.dev). Features a premium responsive UI, rich content authoring, and secure administration.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
@@ -10,7 +10,7 @@ A modern "Link-in-Bio" style landing page and content management system built wi
 ## Features
 
 ### Public-Facing
-- **Landing Page** - Curated links, featured posts, and bio section
+- **Landing Page** - Curated links, featured posts, and about section
 - **Content Pages** - Blog posts and static pages with Markdown support
 - **Tag Filtering** - Browse content by tags
 - **Link Redirects** - Trackable short links

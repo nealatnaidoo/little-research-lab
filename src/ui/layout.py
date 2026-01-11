@@ -92,7 +92,7 @@ class MainLayout(ft.Row): # type: ignore
         self.app_bar = ft.Container(
             content=ft.Row(
                 [
-                    ft.Text("Research Lab Bio", size=20, weight=ft.FontWeight.BOLD, color="primary"),
+                    ft.Text("Little Research Lab", size=20, weight=ft.FontWeight.BOLD, color="primary"),
                     ft.Container(expand=True),
                     ft.IconButton(
                         ft.Icons.DARK_MODE if page.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.LIGHT_MODE,

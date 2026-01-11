@@ -72,7 +72,7 @@ def run_command(name: str, cmd: list[str]) -> GateResult:
         }
 
 def main() -> None:
-    print("=== Research Lab Bio: Quality Gates Runner ===")
+    print("=== Little Research Lab: Quality Gates Runner ===")
     
     results: dict[str, GateResult] = {}
     overall_pass = True

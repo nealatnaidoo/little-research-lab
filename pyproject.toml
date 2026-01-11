@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "research-lab-bio"
+name = "little-research-lab"
 version = "0.1.0"
-description = "A link-in-bio style public landing page with rich content and administration."
+description = "A modern landing page and content management system with rich content authoring and administration."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
