@@ -1,0 +1,54 @@
+# =============================================================================
+# Little Research Lab - Frontend (Next.js) Fly.io Configuration
+# =============================================================================
+# Deploy: fly deploy
+# Logs: fly logs
+# =============================================================================
+
+app = "little-research-lab-web"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+  [build.args]
+    NEXT_PUBLIC_API_URL = "https://little-research-lab.fly.dev"
+
+# =============================================================================
+# HTTP Service Configuration
+# =============================================================================
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+# =============================================================================
+# Health Checks
+# =============================================================================
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/"
+
+# =============================================================================
+# Environment Variables
+# =============================================================================
+[env]
+  NEXT_PUBLIC_API_URL = "https://little-research-lab.fly.dev"
+
+# =============================================================================
+# VM Configuration
+# =============================================================================
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

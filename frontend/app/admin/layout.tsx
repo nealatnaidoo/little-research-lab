@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     FileText,
     Image as ImageIcon,
+    Users,
     Settings,
     LogOut,
     Menu,
@@ -98,6 +99,14 @@ export default function AdminLayout({
                                         <Link href="/admin/assets">
                                             <ImageIcon />
                                             <span>Assets</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/users")}>
+                                        <Link href="/admin/users">
+                                            <Users />
+                                            <span>Users</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

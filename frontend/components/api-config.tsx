@@ -5,8 +5,8 @@ import { OpenAPI } from "@/lib/api"
 
 export function ApiConfig() {
     useEffect(() => {
-        // In dev, assuming NEXT_PUBLIC_API_URL or default to localhost:8000
-        OpenAPI.BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+        // Use empty BASE to proxy through Next.js rewrites (same-origin for cookies)
+        OpenAPI.BASE = ""
         OpenAPI.WITH_CREDENTIALS = true // Important for HttpOnly cookies
     }, [])
 

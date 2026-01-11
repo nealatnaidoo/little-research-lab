@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Next.js build output
+.next
+out
+
+# Environment files (use fly secrets instead)
+.env*
+!.env.example
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Misc
+*.md

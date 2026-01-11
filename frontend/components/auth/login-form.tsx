@@ -62,7 +62,7 @@ export function LoginForm() {
             })
 
             toast.success("Logged in successfully")
-            router.push("/") // or /admin
+            router.push("/admin")
             router.refresh()
 
         } catch (error: any) {

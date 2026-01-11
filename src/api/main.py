@@ -51,6 +51,7 @@ app.include_router(public.router, prefix="/api/public", tags=["Public"])
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://little-research-lab-web.fly.dev",
 ]
 
 app.add_middleware(
