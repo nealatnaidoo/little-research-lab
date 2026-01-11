@@ -85,7 +85,7 @@ class MainLayout(ft.Row): # type: ignore
             content=content,
             expand=True,
             padding=20,
-            alignment=ft.alignment.top_left,
+            alignment=ft.alignment.top_left,  # top_left equivalent
         )
         
         # AppBar (Floating action for Theme/User)

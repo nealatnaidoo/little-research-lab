@@ -65,15 +65,15 @@ def UserListView(page: ft.Page, ctx: ServiceContext, state: AppState) -> ft.View
             )
         )
 
-    return ft.View(
-        route="/admin/users",
-        controls=[
-            ft.AppBar(title=ft.Text("User Management"), bgcolor="surfaceVariant"),
-            ft.Container(
-                content=ft.DataTable(columns=columns, rows=rows),
-                padding=20
-            ),
-        ]
+    # Return just the content - MainLayout handles the app bar/navigation
+    return ft.Container(
+        content=ft.Column([
+            ft.Text("User Management", size=24, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            ft.DataTable(columns=columns, rows=rows),
+        ]),
+        padding=20,
+        expand=True
     )
 
 def UserEditView(
@@ -142,20 +142,18 @@ def UserEditView(
     
     target_name = target_user.display_name
 
-    return ft.View(
-        route=f"/admin/users/{user_id}",
-        controls=[
-            ft.AppBar(title=ft.Text(f"Edit User: {target_name}")),
-            ft.Container(
-                content=ft.Column([
-                    name_field,
-                    email_field,
-                    ft.Text("Roles:"),
-                    roles_col,
-                    status_dropdown,
-                    ft.ElevatedButton("Save Changes", on_click=save_changes)
-                ], width=600),
-                padding=20
-            )
-        ]
+    # Return just the content - MainLayout handles the app bar/navigation
+    return ft.Container(
+        content=ft.Column([
+            ft.Text(f"Edit User: {target_name}", size=24, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            name_field,
+            email_field,
+            ft.Text("Roles:"),
+            roles_col,
+            status_dropdown,
+            ft.ElevatedButton("Save Changes", on_click=save_changes)
+        ], width=600),
+        padding=20,
+        expand=True
     )

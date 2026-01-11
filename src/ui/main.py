@@ -97,13 +97,13 @@ def main(page: ft.Page) -> None:
 
     # 4. Create Context
     ctx = ServiceContext.create(DB_PATH, FS_PATH, rules)
-    
+
     # 5. Bootstrap Owner
     bootstrap_system(ctx)
-    
+
     # 6. App State
     state = AppState()
-    
+
     # 7. Routing Setup
     from typing import Any, cast
 
@@ -288,7 +288,7 @@ def main(page: ft.Page) -> None:
     # Wire up events
     page.on_route_change = router.handle_route_change
     page.on_view_pop = router.view_pop
-    
+
     # Go to initial route (default to "/" if route is empty)
     page.go(page.route or "/")
 

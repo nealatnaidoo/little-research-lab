@@ -44,42 +44,34 @@ def ScheduleView(page: ft.Page, ctx: ServiceContext, state: AppState) -> ft.View
     rows: list[ft.DataRow] = []
     refresh_data()
 
-    return ft.View(
-        "/admin/schedule",
-        [
-            ft.AppBar(
-                title=ft.Text("Schedule Management"), 
-                bgcolor="surfaceVariant"
+    # Return just the content - MainLayout handles the app bar/navigation
+    return ft.Container(
+        content=ft.Column([
+            ft.Row([
+                ft.Text("Schedule Management", size=24, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton(
+                    "Run Scheduler Now",
+                    icon=ft.Icons.UPDATE,
+                    on_click=run_scheduler
+                )
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ft.Divider(),
+            ft.DataTable(
+                columns=[
+                    ft.DataColumn(ft.Text("Title")),
+                    ft.DataColumn(ft.Text("Scheduled For")),
+                    # Note: updated_at used as proxy for sched time in MVP
+                    ft.DataColumn(ft.Text("Status")),
+                ],
+                rows=rows,
             ),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([
-                        ft.Text("Scheduled Content", size=20, weight=ft.FontWeight.BOLD),
-                        ft.ElevatedButton(
-                            "Run Scheduler Now", 
-                            icon=ft.Icons.UPDATE, 
-                            on_click=run_scheduler
-                        )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Divider(),
-                    ft.DataTable(
-                        columns=[
-                            ft.DataColumn(ft.Text("Title")),
-                            ft.DataColumn(ft.Text("Scheduled For")), 
-                            # Note: updated_at used as proxy for sched time in MVP
-                            ft.DataColumn(ft.Text("Status")),
-                        ],
-                        rows=rows,
-                    ),
-                    ft.Text(
-                        "Note: Items in 'scheduled' status will be published when their "
-                        "designated time (currently using updated_at) is passed.", 
-                        size=12, 
-                        italic=True
-                    )
-                ], scroll=ft.ScrollMode.AUTO),
-                padding=20,
-                expand=True
+            ft.Text(
+                "Note: Items in 'scheduled' status will be published when their "
+                "designated time (currently using updated_at) is passed.",
+                size=12,
+                italic=True
             )
-        ]
+        ], scroll=ft.ScrollMode.AUTO),
+        padding=20,
+        expand=True
     )

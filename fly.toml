@@ -7,7 +7,7 @@
 # =============================================================================
 
 app = "little-research-lab"
-primary_region = "iad"  # US East (Washington DC) - change as needed
+primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
@@ -28,25 +28,22 @@ primary_region = "iad"  # US East (Washington DC) - change as needed
     hard_limit = 250
     soft_limit = 200
 
-  # Health checks
-  [http_service.checks]
-    [http_service.checks.health]
-      interval = "30s"
-      timeout = "5s"
-      grace_period = "10s"
-      method = "GET"
-      path = "/"
+# =============================================================================
+# Health Checks
+# =============================================================================
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/"
 
 # =============================================================================
 # Persistent Storage
 # =============================================================================
-# Create volume before first deploy:
-#   fly volumes create lrl_data --size 1 --region iad
-# =============================================================================
 [[mounts]]
   source = "lrl_data"
   destination = "/data"
-  initial_size = "1gb"
 
 # =============================================================================
 # Environment Variables
@@ -56,8 +53,6 @@ primary_region = "iad"  # US East (Washington DC) - change as needed
   LRL_DB_PATH = "/data/lrl.db"
   LRL_FS_PATH = "/data/filestore"
   PYTHONPATH = "/app"
-  # Production settings
-  FLET_SECRET_KEY = ""  # Set via: fly secrets set FLET_SECRET_KEY=your-secret
 
 # =============================================================================
 # VM Configuration
@@ -66,10 +61,3 @@ primary_region = "iad"  # US East (Washington DC) - change as needed
   memory = "512mb"
   cpu_kind = "shared"
   cpus = 1
-
-# =============================================================================
-# Secrets (set via CLI, not in this file)
-# =============================================================================
-# fly secrets set LRL_ADMIN_EMAIL=admin@example.com
-# fly secrets set LRL_ADMIN_PASSWORD=secure-password
-# fly secrets set FLET_SECRET_KEY=$(openssl rand -hex 32)

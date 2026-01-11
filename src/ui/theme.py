@@ -39,7 +39,6 @@ class AppTheme:
             ),
             font_family=cls.font_family,
             use_material3=True,
-            # visual_density=ft.ThemeVisualDensity.COMFORTABLE,  # Removed to fix test environment issue
         )
 
     @classmethod
@@ -51,10 +50,8 @@ class AppTheme:
                 secondary=cls.secondary_dark,
                 background=cls.background_dark,
                 surface=cls.surface_dark,
-                error=cls.error_light, # Keep red for error
-                # brightness=ft.Brightness.DARK,
+                error=cls.error_light,  # Keep red for error
             ),
             font_family=cls.font_family,
-            use_material3=True, 
-            # visual_density=ft.ThemeVisualDensity.COMFORTABLE,
+            use_material3=True,
         )

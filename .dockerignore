@@ -57,8 +57,8 @@ htmlcov/
 
 # Documentation (not needed in container)
 docs/
-*.md
-!README.md
+DEPLOY.md
+CONTRIBUTING.md
 
 # Development artifacts
 artifacts/

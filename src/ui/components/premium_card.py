@@ -23,7 +23,7 @@ class PremiumCard(ft.Container): # type: ignore
             padding=padding,
             border_radius=ft.border_radius.all(12),
             bgcolor="surfaceVariant", # Adapts to theme
-            animate=ft.animation.Animation(200, ft.AnimationCurve.EASE_OUT),
+            animate=ft.Animation(200, ft.AnimationCurve.EASE_OUT),
             on_hover=self._on_hover,
             on_click=on_click,
             expand=expand,

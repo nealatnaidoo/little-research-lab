@@ -107,14 +107,8 @@ def AssetListView(page: ft.Page, ctx: ServiceContext, state: AppState) -> ft.Vie
             ]
         ))
 
-    return ft.View(
-        "/admin/assets",
-        [
-            ft.AppBar(
-                title=ft.Text("Asset Management"), 
-                bgcolor="surfaceVariant"
-            ),
-            ft.Container(
+    # Return just the content - MainLayout handles the app bar/navigation
+    return ft.Container(
                 content=ft.Column([
                     ft.Row([
                         ft.Text("All Assets", size=20, weight=ft.FontWeight.BOLD),
@@ -140,5 +134,3 @@ def AssetListView(page: ft.Page, ctx: ServiceContext, state: AppState) -> ft.Vie
                 padding=20,
                 expand=True
             )
-        ]
-    )

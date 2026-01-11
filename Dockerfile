@@ -32,8 +32,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY pyproject.toml README.md ./
 
 # Install Python dependencies
+# All versions are pinned in pyproject.toml to ensure compatibility
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+    pip install --no-cache-dir ".[dev]" || pip install --no-cache-dir .
 
 # Copy application code
 COPY src/ src/
@@ -56,6 +57,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
 
-# Run the Flet app
-# Using python -c to ensure PYTHONPATH is respected
-CMD ["python", "-c", "import flet as ft; from src.ui.main import main; ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=8080, host='0.0.0.0')"]
+# Run the Flet app in web server mode
+# host=0.0.0.0 required for container networking
+CMD ["python", "-c", "import flet as ft; from src.ui.main import main; ft.app(target=main, port=8080, host='0.0.0.0')"]
