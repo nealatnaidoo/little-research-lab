@@ -4,6 +4,7 @@
 # Deploy: fly deploy
 # Logs: fly logs
 # SSH: fly ssh console
+# Set secrets: fly secrets set LAB_SECRET_KEY="your-secret" LAB_BASE_URL="https://your-app.fly.dev"
 # =============================================================================
 
 app = "little-research-lab"
@@ -36,7 +37,7 @@ primary_region = "iad"
   timeout = "5s"
   grace_period = "10s"
   method = "GET"
-  path = "/"
+  path = "/health"
 
 # =============================================================================
 # Persistent Storage
@@ -49,9 +50,8 @@ primary_region = "iad"
 # Environment Variables
 # =============================================================================
 [env]
-  LRL_DATA_DIR = "/data"
-  LRL_DB_PATH = "/data/lrl.db"
-  LRL_FS_PATH = "/data/filestore"
+  LAB_DATA_DIR = "/data"
+  LAB_RULES_PATH = "/app/research-lab-bio_rules.yaml"
   PYTHONPATH = "/app"
 
 # =============================================================================

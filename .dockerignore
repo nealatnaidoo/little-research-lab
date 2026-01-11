@@ -80,6 +80,10 @@ backups/
 *_quality_gates.md
 *_coding_agent_system_prompt.md
 
+# Frontend (deployed separately)
+frontend/
+node_modules/
+
 # Misc
 *.bak
 *.tmp
