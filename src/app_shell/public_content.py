@@ -4,13 +4,11 @@ from uuid import UUID
 
 import flet as ft
 
+from src.domain.entities import ContentItem
 from src.ui.context import ServiceContext
 from src.ui.state import AppState
 
 logger = logging.getLogger(__name__)
-
-
-from src.domain.entities import ContentItem
 
 
 def _resolve_content_item(
@@ -208,7 +206,7 @@ def LinkRedirectContent(
 
     # Find link by slug
     all_links = ctx.link_repo.get_all()
-    link = next((l for l in all_links if l.slug == slug), None)
+    link = next((lnk for lnk in all_links if lnk.slug == slug), None)
 
     if not link:
         return ft.Text("Link not found", size=20)

@@ -45,7 +45,8 @@ def PublicAssetContent(
 ) -> ft.Control:
     """
     Public asset view - serves assets that are public or attached to published content.
-    Per spec E5.2: Public can fetch only assets that are public OR referenced by published public content.
+    Per spec E5.2: Public can fetch only assets that are public OR referenced by
+    published public content.
     """
     if not asset_id:
         return ft.Text("Asset ID required", color="red")
@@ -99,8 +100,14 @@ def PublicAssetContent(
 
     # File info
     controls.append(ft.Divider())
-    controls.append(ft.Text(f"Filename: {asset.filename_original}", size=12, color="onSurfaceVariant"))
-    controls.append(ft.Text(f"Size: {asset.size_bytes:,} bytes", size=12, color="onSurfaceVariant"))
+    filename_text = ft.Text(
+        f"Filename: {asset.filename_original}", size=12, color="onSurfaceVariant"
+    )
+    controls.append(filename_text)
+    size_text = ft.Text(
+        f"Size: {asset.size_bytes:,} bytes", size=12, color="onSurfaceVariant"
+    )
+    controls.append(size_text)
 
     return ft.Container(
         content=ft.Column(controls, horizontal_alignment=ft.CrossAxisAlignment.CENTER),

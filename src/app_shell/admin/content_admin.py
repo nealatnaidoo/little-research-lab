@@ -208,7 +208,7 @@ def ContentEditContent(
             page.update()
 
     def share_click(_: ft.ControlEvent) -> None:
-        if not item: 
+        if not item:
             return
         # Simple share: copy link to clipboard
         link = f"/post/{item.id}"
@@ -217,15 +217,170 @@ def ContentEditContent(
         page.snack_bar.open = True
         page.update()
 
+    def publish_now(_: ft.ControlEvent) -> None:
+        """Publish content immediately (draft -> published)."""
+        if not item or not state.current_user:
+            return
+        try:
+            ctx.publish_service.publish_now(state.current_user, item.id)
+            page.snack_bar = ft.SnackBar(ft.Text("Published successfully!"))
+            page.snack_bar.open = True
+            # Refresh the page to show updated status
+            page.go(f"/admin/content/{item.id}")
+        except PermissionError as e:
+            page.snack_bar = ft.SnackBar(ft.Text(f"Permission denied: {e}"))
+            page.snack_bar.open = True
+            page.update()
+        except Exception as e:
+            logger.error(f"Publish error: {e}")
+            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {e}"))
+            page.snack_bar.open = True
+            page.update()
+
+    # Schedule functionality with date/time picker
+    selected_date: datetime | None = None
+
+    def on_date_picked(e: ft.ControlEvent) -> None:
+        """Handle date selection, then show time picker."""
+        nonlocal selected_date
+        if e.control.value:
+            selected_date = e.control.value
+            # Flet 0.28: use open property instead of pick_time()
+            time_picker.open = True
+            page.update()
+
+    def on_time_picked(e: ft.ControlEvent) -> None:
+        """Handle time selection and schedule the content."""
+        if not item or not state.current_user or not selected_date:
+            return
+        if e.control.value:
+            schedule_dt = datetime.combine(
+                selected_date.date(),
+                e.control.value
+            )
+            try:
+                ctx.publish_service.schedule(
+                    state.current_user, item.id, schedule_dt
+                )
+                page.snack_bar = ft.SnackBar(
+                    ft.Text(f"Scheduled for {schedule_dt.strftime('%Y-%m-%d %H:%M')}")
+                )
+                page.snack_bar.open = True
+                page.go(f"/admin/content/{item.id}")
+            except ValueError as err:
+                page.snack_bar = ft.SnackBar(ft.Text(f"Error: {err}"))
+                page.snack_bar.open = True
+                page.update()
+            except PermissionError as err:
+                page.snack_bar = ft.SnackBar(ft.Text(f"Permission denied: {err}"))
+                page.snack_bar.open = True
+                page.update()
+
+    date_picker = ft.DatePicker(on_change=on_date_picked)
+    time_picker = ft.TimePicker(on_change=on_time_picked)
+    page.overlay.extend([date_picker, time_picker])
+
+    def schedule_click(_: ft.ControlEvent) -> None:
+        """Open date picker to start scheduling flow."""
+        # Flet 0.28: use open property instead of pick_date()
+        date_picker.open = True
+        page.update()
+
+    def unpublish(_: ft.ControlEvent) -> None:
+        """Unpublish content (published/scheduled -> draft)."""
+        if not item or not state.current_user:
+            return
+        try:
+            ctx.publish_service.unpublish(state.current_user, item.id)
+            page.snack_bar = ft.SnackBar(ft.Text("Moved to draft."))
+            page.snack_bar.open = True
+            page.go(f"/admin/content/{item.id}")
+        except PermissionError as e:
+            page.snack_bar = ft.SnackBar(ft.Text(f"Permission denied: {e}"))
+            page.snack_bar.open = True
+            page.update()
+        except Exception as e:
+            logger.error(f"Unpublish error: {e}")
+            page.snack_bar = ft.SnackBar(ft.Text(f"Error: {e}"))
+            page.snack_bar.open = True
+            page.update()
+
+    # Determine content status for button logic
+    current_status = item.status if item else "draft"
+    can_publish = not is_new and current_status == "draft"
+    can_unpublish = not is_new and current_status in ("published", "scheduled")
+
+    # Status badge colors
+    status_colors = {
+        "draft": ("grey", "Draft"),
+        "scheduled": ("orange", "Scheduled"),
+        "published": ("green", "Published"),
+        "archived": ("red", "Archived"),
+    }
+    badge_color, badge_text = status_colors.get(current_status, ("grey", current_status))
+
+    def preview_click(_: ft.ControlEvent) -> None:
+        """Open preview of content in public view."""
+        if not item:
+            return
+        # Navigate to the public post view by ID (admin can see drafts)
+        page.go(f"/post/{item.id}")
+
+    # Build action buttons
+    action_buttons = [
+        ft.ElevatedButton("Share", icon=ft.Icons.SHARE, on_click=share_click),
+        ft.ElevatedButton("Save", icon=ft.Icons.SAVE, on_click=save)
+    ]
+    # Preview is available for all existing items (not just drafts)
+    if not is_new and item:
+        action_buttons.insert(0, ft.ElevatedButton(
+            "Preview",
+            icon=ft.Icons.PREVIEW,
+            on_click=preview_click
+        ))
+    if can_unpublish:
+        action_buttons.insert(0, ft.ElevatedButton(
+            "Unpublish",
+            icon=ft.Icons.UNPUBLISHED,
+            on_click=unpublish
+        ))
+    if can_publish:
+        action_buttons.insert(0, ft.ElevatedButton(
+            "Schedule",
+            icon=ft.Icons.SCHEDULE,
+            on_click=schedule_click
+        ))
+        action_buttons.insert(0, ft.ElevatedButton(
+            "Publish Now",
+            icon=ft.Icons.PUBLISH,
+            on_click=publish_now,
+            bgcolor="primary",
+            color="onPrimary"
+        ))
+
+    # Status badge for non-new items
+    status_badge = None
+    if not is_new and item:
+        status_badge = ft.Container(
+            content=ft.Text(badge_text, size=12, color="white"),
+            bgcolor=badge_color,
+            padding=ft.padding.symmetric(horizontal=10, vertical=4),
+            border_radius=12,
+        )
+
+    # Header row with title and status
+    header_content = [
+        ft.Text("Edit Content", size=24, weight=ft.FontWeight.BOLD, color="primary")
+    ]
+    if status_badge:
+        header_content.append(status_badge)
+
     # Layout
     return ft.Container(
         content=ft.Column([
             ft.Row([
-                ft.Text("Edit Content", size=24, weight=ft.FontWeight.BOLD, color="primary"),
-                ft.Row([
-                    ft.ElevatedButton("Share", icon=ft.Icons.SHARE, on_click=share_click),
-                    ft.ElevatedButton("Save", icon=ft.Icons.SAVE, on_click=save)
-                ])
+                ft.Row(header_content, spacing=10),
+                ft.Row(action_buttons)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Divider(),
             ft.Container(

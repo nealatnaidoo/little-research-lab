@@ -50,3 +50,34 @@
 |---|---|---|---|---|---|---|---|---|
 | T-0041 | Enhanced Service Integration Suite (User Journey) | EV-0001 | T-0040 | tests/integration/test_user_journey.py | pytest | done | artifacts/walkthrough.md |  |
 | T-0042 | Unit Tests for UI State Logic (Theme/Layout) | EV-0002 | T-0040 | tests/unit/test_ui_logic.py | pytest | done | artifacts/walkthrough.md |  |
+
+| id | title | spec_refs | depends_on | files_expected | tests_required | status | evidence | notes |
+|---|---|---|---|---|---|---|---|---|
+| T-0043 | Add Publish Now button to content edit form | E4.1 | T-0023,T-0017 | src/app_shell/admin/content_admin.py | manual verification | done | artifacts/quality_gates_run.json | Publish Now button added for draft items |
+| T-0044 | Add Schedule button with date picker to content edit form | E4.1 | T-0023,T-0017 | src/app_shell/admin/content_admin.py | manual verification | done | artifacts/quality_gates_run.json | Schedule button with date/time picker flow |
+| T-0045 | Add status display and Unpublish button for published content | E4.1 | T-0023,T-0017 | src/app_shell/admin/content_admin.py | manual verification | done | artifacts/quality_gates_run.json | Status badge + Unpublish button added |
+| T-0046 | Add Preview button to content edit form | E3.3 | T-0023 | src/app_shell/admin/content_admin.py | TA-E3.3-1 | done | artifacts/quality_gates_run.json | Preview navigates to public view |
+
+## Epic: Frontend Migration (Flet → React/Next.js)
+
+> See EV-0004 and D-0005 for rationale. Clean architecture (ports/adapters) ensures backend services remain unchanged.
+
+| id | title | spec_refs | depends_on | files_expected | tests_required | status | evidence | notes |
+|---|---|---|---|---|---|---|---|---|
+| T-0047 | Create FastAPI REST API layer | D-0005 | T-0046 | src/api/main.py, src/api/routes/*.py, src/api/schemas.py | pytest api tests | done | tests/integration/api/test_api_smoke.py | Expose existing services via REST endpoints |
+| T-0048 | Add JWT authentication to API | E2.1,D-0005 | T-0047 | src/api/auth.py, src/api/deps.py | TA-E2.1-1 security tests | done | tests/integration/api/test_auth_flow.py | Replace session-based auth with JWT |
+| T-0049 | Initialize Next.js frontend project | D-0005 | T-0047 | frontend/package.json, frontend/app/*, frontend/tailwind.config.js | npm run build | done | Build passed | Next.js 14+ with App Router, shadcn/ui, Tailwind |
+| T-0050 | Create API client library | D-0005 | T-0048,T-0049 | frontend/lib/api.ts, frontend/lib/types.ts | TypeScript compile | done | Build passed | Type-safe API client for React components |
+| T-0051 | Implement auth pages (Login/Logout) | E2.1 | T-0050 | frontend/app/login/*, frontend/components/auth/* | manual verification | done | Build passed | JWT-based login flow |
+| T-0052 | Implement public landing page | E1.1 | T-0050 | frontend/app/page.tsx, frontend/components/home/* | TA-E1.1-1 | done | Build passed | Port from PublicHomeContent |
+| T-0053 | Implement public post/page views | E1.2 | T-0050 | frontend/app/p/[slug]/*, frontend/app/page/[slug]/* | TA-E1.2-1 | done | Build passed | Port from PublicPostContent/PublicPageContent |
+| T-0054 | Implement admin dashboard | E7.1 | T-0051 | frontend/app/dashboard/*, frontend/components/admin/* | TA-E7.1-1 | done | Build passed | Port from AdminDashboardContent |
+| T-0055 | Implement content management UI | E3.1,E4.1 | T-0054 | frontend/app/admin/content/*, frontend/components/content/* | TA-E3.1-1,TA-E4.1-1 | done | Build passed | Port from ContentListContent/ContentEditContent |
+| T-0056 | Implement asset management UI | E5.1 | T-0054 | frontend/app/admin/assets/*, frontend/components/assets/* | TA-E5.1-2 | done | Build passed | Port from AssetListView |
+| T-0057 | Implement user management UI | E2.2,E6.1 | T-0054 | frontend/app/admin/users/*, frontend/components/users/* | TA-E2.2-2 | done | Build passed | Port from UserListView/UserEditView |
+| T-0058 | Implement schedule view UI | E4.3 | T-0054 | frontend/app/admin/schedule/* | TA-E4.3-1 | pending |  | Port from ScheduleView |
+| T-0059 | Dark/Light theme implementation | EV-0002 | T-0049 | frontend/lib/theme.ts, frontend/components/theme-toggle.tsx | manual verification | pending |  | Tailwind dark mode with toggle |
+| T-0060 | Update Dockerfile for two-service deployment | Hosting | T-0049,T-0047 | Dockerfile, docker-compose.yml | docker build | pending |  | FastAPI + Next.js containers |
+| T-0061 | Update Fly.io configuration | Hosting | T-0060 | fly.toml | fly deploy | pending |  | Configure for two-service topology |
+| T-0062 | Remove legacy Flet code | D-0005 | T-0061 | src/app_shell/*, src/ui/* | N/A | pending |  | Clean up after migration complete |
+| T-0063 | Final migration validation | D-0005 | T-0062 | artifacts/migration_report.md | Full test suite | pending |  | Verify all features work in new stack |

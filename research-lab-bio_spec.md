@@ -7,7 +7,7 @@
 - Publish **written content** (short posts, longer articles, pages) with **rich blocks** (text, images, charts/graphics) and responsive layout.
 - Allow **secure administration** for creating/editing content, uploading assets, and scheduling publication.
 - Support **collaboration** with roles and scoped permissions.
-- Be built in **Python + Flet** (Web App), utilizing `MainLayout` with Navigation Rail/Drawer and Dark Mode support.
+- Be built with **React/Next.js** frontend (TypeScript) + **FastAPI** backend (Python), utilizing modern component libraries (shadcn/ui, Tailwind CSS) with responsive layout and Dark Mode support.
 
 ### Non-goals
 - Full CMS feature parity (no WYSIWYG complex editor, no multi-site hosting).
@@ -25,7 +25,10 @@
 
 ## Assumptions and constraints
 
-- Tech stack: Python 3.12+, Flet (web target), SQLite initially (file-based), optional Postgres later.
+- Tech stack:
+  - **Frontend**: React 18+, Next.js 14+, TypeScript, Tailwind CSS, shadcn/ui components
+  - **Backend**: Python 3.12+, FastAPI (REST API)
+  - **Database**: SQLite initially (file-based), optional Postgres later.
 - Hosting: container or VM with persistent volume for DB + uploaded assets.
 - External services: none required (email optional for invites; can start with “invite tokens” copied manually).
 - File storage: local filesystem under a configured data directory; later can swap to S3-compatible.
@@ -222,19 +225,24 @@ Invalid transitions must be rejected by functional core.
 ### Style
 - **Atomic components**: small, isolated modules with clear contracts.
 - **Functional Core + Imperative Shell**:
-  - Core: domain rules, validation, state transitions, queries, command handlers (pure).
-  - Shell: Flet UI, DB I/O, filesystem I/O, auth session cookies, time, logging.
+  - Core: domain rules, validation, state transitions, queries, command handlers (pure Python).
+  - Shell: FastAPI REST endpoints, DB I/O, filesystem I/O, auth/JWT, time, logging.
+  - UI: React/Next.js consumes REST API, handles client-side state and rendering.
 
 ### Layout (example)
-- `src/`
-  - `app_shell/` (Flet routes, adapters)
-  - `ui/` (Theme, Layout, Components, Views)
+- `src/` (Python backend)
+  - `api/` (FastAPI routes, request/response schemas)
   - `domain/` (entities, commands, policies, state machines)
   - `services/` (use-cases: create/edit/publish/upload)
   - `ports/` (interfaces: repos, clock, file_store, auth, renderer)
   - `adapters/` (sqlite repo, fs filestore, matplotlib renderer, password hasher)
   - `rules/` (rules loader + validator)
   - `manifest/` (component manifest generator/check)
+- `frontend/` (React/Next.js)
+  - `app/` (Next.js App Router pages)
+  - `components/` (shadcn/ui + custom components)
+  - `lib/` (API client, utilities)
+  - `styles/` (Tailwind CSS)
 - `tests/`
   - `unit/` (domain pure tests)
   - `integration/` (repo + service + scheduling)
@@ -446,7 +454,9 @@ Invalid transitions must be rejected by functional core.
 
 ## Hosting / deployment topology
 
-- Single service: Flet server process.
+- **Two services**:
+  - FastAPI backend (Python) - serves REST API
+  - Next.js frontend (Node.js) - serves React UI (can be static export or SSR)
 - Persistent volume:
   - `DATA_DIR/db.sqlite3`
   - `DATA_DIR/assets/` (binary files)
@@ -504,7 +514,7 @@ Backups/restore drill:
 ---
 
 ## Unknown-unknowns checklist
-- U1: Flet routing limitations for deep links → Control: central router adapter + integration test. TA-U1.
+- U1: Next.js SSR/static export trade-offs → Control: start with static export, upgrade to SSR if needed. TA-U1.
 - U2: Markdown renderer safety gaps → Control: sanitize before render; deny raw HTML. TA-U2.
 - U3: File MIME spoofing → Control: validate by magic bytes when possible + allowlist. TA-U3.
 - U4: Hosting restarts impacting scheduling → Control: publish_due job + check-on-startup. TA-U4.
@@ -520,7 +530,8 @@ Backups/restore drill:
 ---
 
 ## Risks
-- Flet web session/auth integration complexity.
+- Two-service deployment complexity (mitigated by containerization).
+- TypeScript learning curve (mitigated by AI-assisted development and shadcn/ui patterns).
 - Asset access scoping bugs (must be tested).
 - Chart rendering performance if many charts on landing.
 

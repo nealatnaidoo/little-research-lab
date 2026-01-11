@@ -1,7 +1,36 @@
+import hashlib
+from datetime import timedelta
 from typing import Any
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+
+from src.api.auth_utils import (
+    create_access_token,
+    decode_access_token,
+    get_password_hash,
+    verify_password,
+)
+
+
+class JWTAuthAdapter:
+    """Auth adapter that uses JWT tokens and passlib for password hashing."""
+
+    def hash_password(self, password: str) -> str:
+        return get_password_hash(password)
+
+    def verify_password(self, plain: str, hashed: str) -> bool:
+        return verify_password(plain, hashed)
+
+    def hash_token(self, token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    def create_token(self, user_id: Any, ttl_minutes: int) -> str:
+        return create_access_token({"sub": str(user_id)}, timedelta(minutes=ttl_minutes))
+
+    def validate_token(self, token: str) -> Any | None:
+        payload = decode_access_token(token)
+        return payload.get("sub") if payload else None
 
 
 class Argon2AuthAdapter:
@@ -19,12 +48,11 @@ class Argon2AuthAdapter:
             return False
 
     def hash_token(self, token: str) -> str:
-        import hashlib
         return hashlib.sha256(token.encode()).hexdigest()
 
     def create_token(self, user_id: Any, ttl_minutes: int) -> str:
-        # Simple random token for now.
         import secrets
+
         return secrets.token_urlsafe(32)
 
     def validate_token(self, token: str) -> Any | None:

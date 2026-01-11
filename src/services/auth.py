@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from typing import Literal, cast
 from uuid import UUID, uuid4
 
-from src.domain.entities import Session, User
+from src.domain.entities import RoleType, Session, User
 from src.domain.policy import PolicyEngine
 from src.ports.auth import AuthPort
 from src.ports.repo import UserRepoPort
@@ -53,8 +54,41 @@ class AuthService:
             raise PermissionError("Access denied")
         return self.user_repo.list_all()
 
+    def create_user(
+        self,
+        actor: User,
+        email: str,
+        password: str,
+        roles: list[str],
+        display_name: str | None = None,
+    ) -> User:
+        if not self.policy.can_manage_users(actor):
+            raise PermissionError("Access denied")
+            
+        if self.user_repo.get_by_email(email):
+            raise ValueError("Email already in use")
+            
+        password_hash = self.auth_adapter.hash_password(password)
+        
+        new_user = User(
+            id=uuid4(),
+            email=email,
+            display_name=display_name or email.split("@")[0],
+            password_hash=password_hash,
+            roles=cast(list[RoleType], roles),
+            status="active",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        self.user_repo.save(new_user)
+        return new_user
+
     def update_user(
-        self, actor: User, target_id: str | UUID, new_roles: list[str], new_status: str
+        self,
+        actor: User,
+        target_id: str | UUID,
+        new_roles: list[str] | None = None,
+        new_status: str | None = None,
     ) -> User:
         if not self.policy.can_manage_users(actor):
             raise PermissionError("Access denied")
@@ -67,13 +101,12 @@ class AuthService:
         # Self-lockout check
         if str(target.id) == str(actor.id):
              # Prevent removing admin role from self
-             if "admin" in target.roles and "admin" not in new_roles:
+             if new_roles is not None and "admin" in target.roles and "admin" not in new_roles:
                  raise ValueError("Cannot remove admin role from yourself")
-             if new_status != "active":
+             if new_status is not None and new_status != "active":
                  raise ValueError("Cannot disable yourself")
         
-        # Invalidate sessions if disabled
-        if new_status != "active" and target.status == "active":
+        if new_status and new_status != "active" and target.status == "active":
              # Remove all sessions for this user
              tokens_to_remove = [
                  k for k, v in self._sessions.items() 
@@ -82,11 +115,11 @@ class AuthService:
              for k in tokens_to_remove:
                  del self._sessions[k]
 
-        # We trust the caller (admin UI) to provide valid roles/status strings
-        # But we should probably validate against RoleType logic or cast
-        # For now, simplistic casting to Any or ignore to satisfy mypy
-        target.roles = new_roles # type: ignore
-        target.status = new_status # type: ignore
+        if new_roles is not None:
+            target.roles = cast(list[RoleType], new_roles)
+        if new_status is not None:
+            target.status = cast(Literal["active", "disabled"], new_status)
+            
         target.updated_at = datetime.now()
         
         self.user_repo.save(target)

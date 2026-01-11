@@ -1,10 +1,11 @@
 # Little Research Lab
 
-A modern landing page and content management system built with Python and [Flet](https://flet.dev). Features a premium responsive UI, rich content authoring, and secure administration.
+A modern landing page and content management system built with **React/Next.js** frontend and **FastAPI** backend. Features a premium responsive UI (shadcn/ui + Tailwind CSS), rich content authoring, and secure administration.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
-![Flet](https://img.shields.io/badge/flet-0.28.x-purple.svg)
+![React](https://img.shields.io/badge/react-19+-61dafb.svg)
+![Next.js](https://img.shields.io/badge/next.js-16+-black.svg)
 ![Deploy](https://img.shields.io/badge/deploy-fly.io-blueviolet.svg)
 
 ## Features
@@ -33,18 +34,19 @@ A modern landing page and content management system built with Python and [Flet]
 
 | Layer | Technology |
 |-------|------------|
-| UI Framework | [Flet](https://flet.dev) (Python → Flutter Web) |
-| Backend | Python 3.12+ |
+| Frontend | React 19, Next.js 16, TypeScript, Tailwind CSS 4, shadcn/ui |
+| Backend | Python 3.12+, FastAPI (REST API) |
 | Database | SQLite |
-| Validation | Pydantic |
-| Auth | Argon2-cffi |
+| Validation | Pydantic v2 |
+| Auth | Argon2-cffi, JWT (python-jose), passlib |
 | Charts | Matplotlib |
 | Deployment | Docker, Fly.io |
 
 ## Architecture
 
 ```
-src/
+src/                  # Python backend
+├── api/              # FastAPI routes & request/response schemas
 ├── domain/           # Core business logic & entities (pure Python)
 │   ├── entities.py   # User, ContentItem, Asset, etc.
 │   └── policies.py   # RBAC policy rules
@@ -56,22 +58,19 @@ src/
 │   ├── auth_service.py
 │   ├── content_service.py
 │   └── asset_service.py
-├── app_shell/        # Route handlers & admin views
-│   ├── router.py
-│   ├── admin/        # Admin dashboard views
-│   └── public_*.py   # Public page handlers
-├── ui/               # UI components & layout
-│   ├── main.py       # App entry point
-│   ├── layout.py     # MainLayout with navigation
-│   ├── theme.py      # Theme configuration
-│   └── components/   # Reusable UI components
 └── rules/            # Configuration loading
+
+frontend/             # React/Next.js frontend
+├── app/              # Next.js App Router pages
+├── components/       # shadcn/ui + custom components
+├── lib/              # API client, utilities
+└── styles/           # Tailwind CSS
 ```
 
 **Design Pattern**: Ports & Adapters (Hexagonal Architecture)
 - Domain logic is pure Python with no I/O dependencies
 - Services orchestrate domain logic with adapters
-- UI layer consumes services through a `ServiceContext`
+- FastAPI provides REST API consumed by React frontend
 
 ## Quick Start
 
@@ -86,28 +85,38 @@ src/
 git clone https://github.com/yourusername/little-research-lab.git
 cd little-research-lab
 
-# Create virtual environment
+# Backend setup
 python3 -m venv .venv
 source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-
-# Install dependencies
 pip install -e ".[dev]"
 
-# Run the application
-flet run --web src/ui/main.py
+# Set required environment variables
+export LAB_SECRET_KEY="your-secret-key-for-jwt"
+export LAB_BASE_URL="http://localhost:8000"
+export LAB_DATA_DIR="./data"
+
+# Initialize database and seed admin user
+python seed_db.py
+
+# Run API server
+uvicorn src.api.main:app --reload
+
+# Frontend setup (in another terminal)
+cd frontend
+npm install
+npm run dev
 ```
 
-Open http://localhost:8550 in your browser.
+- API: http://localhost:8000 (Swagger docs at /docs)
+- Frontend: http://localhost:3000
 
-### Bootstrap Admin Account
+### Default Admin Account
 
-Set environment variables before first run:
-```bash
-export LRL_ADMIN_EMAIL="admin@example.com"
-export LRL_ADMIN_PASSWORD="your-secure-password"
-```
+After running `seed_db.py`:
+- Email: `admin@example.com`
+- Password: `changeme`
 
-Or the system will prompt you on first run.
+**Important:** Change the password after first login in production.
 
 ## Deployment
 
@@ -124,8 +133,8 @@ fly apps create your-app-name
 fly volumes create lrl_data --size 1 --region iad
 
 # Set secrets
-fly secrets set LRL_ADMIN_EMAIL=admin@yourdomain.com
-fly secrets set LRL_ADMIN_PASSWORD=your-secure-password
+fly secrets set LAB_SECRET_KEY="your-secure-secret-key"
+fly secrets set LAB_BASE_URL="https://your-app-name.fly.dev"
 
 # Deploy
 fly deploy
@@ -189,4 +198,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with [Flet](https://flet.dev) | Deployed on [Fly.io](https://fly.io)
+Built with [React](https://react.dev) + [Next.js](https://nextjs.org) + [FastAPI](https://fastapi.tiangolo.com) | Deployed on [Fly.io](https://fly.io)

@@ -21,6 +21,8 @@ dependencies = [
     "pyyaml>=6.0",
     "argon2-cffi>=23.1.0",
     "matplotlib>=3.10.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +44,9 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"src/api/**/*.py" = ["B008"]  # Depends() in defaults is standard FastAPI pattern
 
 [tool.mypy]
 python_version = "3.12"

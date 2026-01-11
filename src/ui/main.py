@@ -8,8 +8,8 @@ from src.app_shell.admin.content_admin import ContentEditContent, ContentListCon
 
 # Legacy/Refactored Imports
 from src.app_shell.admin.dashboard import AdminDashboardContent
-from src.app_shell.config import validate_ops_rules
 from src.app_shell.asset_routes import PublicAssetContent
+from src.app_shell.config import validate_ops_rules
 from src.app_shell.public_content import (
     LinkRedirectContent,
     PublicPageContent,
@@ -103,6 +103,24 @@ def main(page: ft.Page) -> None:
 
     # 6. App State
     state = AppState()
+
+    # 6.5 Dev Auto-Login (for local testing only)
+    if os.environ.get("LRL_DEV_AUTOLOGIN", "").lower() == "true":
+        logger.warning("DEV MODE: Auto-login enabled - DO NOT USE IN PRODUCTION")
+        try:
+            # Find first owner/admin user
+            all_users = ctx.auth_service.user_repo.list_all()
+            admin_user = next(
+                (u for u in all_users if "owner" in u.roles or "admin" in u.roles),
+                None
+            )
+            if admin_user:
+                state.current_user = admin_user
+                logger.warning(f"DEV MODE: Auto-logged in as {admin_user.email}")
+            else:
+                logger.warning("DEV MODE: No admin/owner user found for auto-login")
+        except Exception as e:
+            logger.error(f"DEV MODE: Auto-login failed: {e}")
 
     # 7. Routing Setup
     from typing import Any, cast

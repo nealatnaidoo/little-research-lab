@@ -5,9 +5,40 @@
 - Coding must halt on drift triggers until BA artifacts are updated (spec/rules/tasklist/decisions/gates).
 
 ## Open entries
-_None_
+
+(No open entries)
 
 ## Resolved entries
+
+### EV-0004: Frontend Migration from Flet to React/Next.js
+- **Date**: 2026-01-11
+- **Trigger**: Persistent Flet version compatibility issues (WebSocket errors, API changes between 0.28.x versions, DatePicker/TimePicker API instability) blocking reliable UI development.
+- **Description**: Flet compiles Python to Flutter/Dart for web via WebSocket rendering. This architecture has proven fragile:
+  1. WebSocket "Receive loop error: 'text'" requiring pinned websockets <14.0
+  2. `ft.animation.Animation` vs `ft.Animation` API changes
+  3. `DatePicker.pick_date()` method doesn't exist in 0.28.x
+  4. Small community = limited solutions for edge cases
+  5. Testing Flet views is non-trivial (EV-0001)
+- **Impact**:
+  - Development velocity significantly reduced by debugging Flet compatibility
+  - UI cannot achieve "Premium" polish due to Flet limitations
+  - Long-term maintainability risk with niche framework
+- **Proposed change**:
+  1. Migrate frontend from Flet to **React/Next.js**
+  2. Convert Python backend to **REST API** (FastAPI) consumed by React
+  3. Preserve all domain logic, services, and adapters (clean architecture pays off)
+  4. Use existing Flet code as **specification** for React components
+  5. Phased migration: API first, then component-by-component UI rebuild
+- **Affected artifacts**:
+  - `research-lab-bio_spec.md` (tech stack, architecture)
+  - `research-lab-bio_decisions.md` (D-0005)
+  - `research-lab-bio_tasklist.md` (new migration epic)
+  - `README.md` (tech stack badges, setup instructions)
+  - `pyproject.toml` (remove flet dependencies, add fastapi)
+  - All `src/ui/` and `src/app_shell/` code (to be replaced)
+- **Halt required**: Yes - spec update required before coding
+- **Resolution**: Resolved - spec, decisions, README, and tasklist updated. Ready for T-0047+ implementation.
+- **Links to decisions/tasks**: D-0005, T-0047 through T-0063
 
 ### EV-0001: Flet UI Testing Strategy
 - **Date**: 2026-01-10

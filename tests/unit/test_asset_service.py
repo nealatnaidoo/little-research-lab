@@ -50,7 +50,7 @@ def test_upload_asset_success(service, mock_policy, mock_filestore, mock_repo):
     assert asset.mime_type == "image/png"
     assert asset.storage_path == "storage/path"
     
-    mock_policy.check_permission.assert_called_with(user, user.roles, "asset:create")
+    mock_policy.check_permission.assert_called_with(user, user.roles, "assets:upload")
     mock_filestore.save.assert_called()
     mock_repo.save.assert_called_with(asset)
 

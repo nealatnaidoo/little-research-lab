@@ -36,7 +36,7 @@ class AssetService:
         Uploads an asset, validates it, and saves it to storage and DB.
         """
         # 1. Permission Check
-        if not self.policy.check_permission(user, user.roles, "asset:create"):
+        if not self.policy.check_permission(user, user.roles, "assets:upload"):
             raise PermissionError("User not allowed to upload assets.")
 
         # 2. Validation
@@ -102,14 +102,25 @@ class AssetService:
 
         # Check permissions
         # Resource-based check (e.g. ownership) via ABAC
-        if not self.policy.check_permission(user, role, "asset:read", resource=asset):
+        if not self.policy.check_permission(user, role, "assets:read", resource=asset):
             raise PermissionError("User not allowed to view this asset.")
 
         return asset
 
     def get_asset_content(self, user: User | None, asset_id: UUID) -> bytes:
         """
-        Get asset content (bytes).
+        Get asset content (bytes). Checks permissions first.
         """
         asset = self.get_asset_meta(user, asset_id)
         return self.filestore.get(asset.storage_path)
+
+    def list_assets(self, user: User) -> list[Asset]:
+        """
+        List all assets the user can access.
+        """
+        if not self.policy.check_permission(user, user.roles, "assets:list"):
+            raise PermissionError("User not allowed to list assets.")
+
+        # For admin/owner, show all assets
+        # For others, could filter by ownership - for now return all
+        return self.repo.list_assets()

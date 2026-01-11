@@ -1,11 +1,13 @@
-import pytest
-import sqlite3
 import os
+import sqlite3
 from pathlib import Path
 
-from src.ui.context import ServiceContext
+import pytest
+
 from src.adapters.sqlite.migrator import SQLiteMigrator
 from src.rules.loader import load_rules
+from src.ui.context import ServiceContext
+
 
 @pytest.fixture
 def test_data_dir(tmp_path):
@@ -39,11 +41,13 @@ def test_ctx(test_data_dir):
     admin_id = str(uuid4())
     
     conn.execute(
-        "INSERT INTO users (id, email, display_name, password_hash, status, created_at, updated_at) "
-        "VALUES (?, 'admin@example.com', 'Admin', 'hash', 'active', '2025-01-01T00:00:00', '2025-01-01T00:00:00')",
+        "INSERT INTO users "
+        "(id, email, display_name, password_hash, status, created_at, updated_at) "
+        "VALUES (?, 'admin@example.com', 'Admin', 'hash', 'active', "
+        "'2025-01-01T00:00:00', '2025-01-01T00:00:00')",
         (admin_id,)
     )
-    # Role - map admin to 'admin' or 'owner' depending on test need. Let's make them 'owner' for full access.
+    # Role - map admin to 'owner' for full access in tests.
     conn.execute(
         "INSERT INTO role_assignments (id, user_id, role, created_at) "
         "VALUES (?, ?, 'owner', '2025-01-01T00:00:00')",

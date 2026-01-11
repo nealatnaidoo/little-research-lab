@@ -102,9 +102,35 @@ class ContentService:
         """
         List all published items visible to public.
         """
-        # We assume no user needed to check this, it's public listing.
-        # Although list filtering is usually done by repo.
         items = self.repo.list_items(filters={"status": "published", "visibility": "public"})
-        # Sort by published_at desc ideally
         items.sort(key=lambda x: x.published_at or x.created_at, reverse=True)
         return items
+
+    def list_items(
+        self, user: User, filters: dict[str, Any] | None = None
+    ) -> list[ContentItem]:
+        """
+        List content items for authenticated user (admin view).
+        """
+        if not self.policy.check_permission(user, user.roles, "content:list"):
+            raise PermissionError("User not allowed to list content")
+
+        items = self.repo.list_items(filters=filters or {})
+        items.sort(key=lambda x: x.updated_at, reverse=True)
+        return items
+
+    def get_by_slug(
+        self, slug: str, item_type: str = "post"
+    ) -> ContentItem | None:
+        """
+        Get content item by slug (public access - checks visibility).
+        """
+        item = self.repo.get_by_slug(slug, item_type)
+        if not item:
+            return None
+
+        # For public access, only return published public items
+        if item.status != "published" or item.visibility != "public":
+            return None
+
+        return item

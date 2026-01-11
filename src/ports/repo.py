@@ -1,7 +1,15 @@
 from typing import Any, Protocol
 from uuid import UUID
 
-from src.domain.entities import Asset, CollaborationGrant, ContentItem, Invite, LinkItem, SiteSettings, User
+from src.domain.entities import (
+    Asset,
+    CollaborationGrant,
+    ContentItem,
+    Invite,
+    LinkItem,
+    SiteSettings,
+    User,
+)
 
 
 class UserRepoPort(Protocol):

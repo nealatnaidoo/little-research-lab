@@ -89,13 +89,23 @@ class MainLayout(ft.Row): # type: ignore
         )
         
         # AppBar (Floating action for Theme/User)
+        theme_icon = (
+            ft.Icons.DARK_MODE
+            if page.theme_mode == ft.ThemeMode.LIGHT
+            else ft.Icons.LIGHT_MODE
+        )
         self.app_bar = ft.Container(
             content=ft.Row(
                 [
-                    ft.Text("Little Research Lab", size=20, weight=ft.FontWeight.BOLD, color="primary"),
+                    ft.Text(
+                        "Little Research Lab",
+                        size=20,
+                        weight=ft.FontWeight.BOLD,
+                        color="primary"
+                    ),
                     ft.Container(expand=True),
                     ft.IconButton(
-                        ft.Icons.DARK_MODE if page.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.LIGHT_MODE,
+                        theme_icon,
                         on_click=lambda _: self.toggle_theme()
                     ),
                     ft.PopupMenuButton(

@@ -33,3 +33,26 @@
 - Rationale: Avoid dependency on SMTP/API initially.
 - Implications: UX slightly less smooth.
 - Rollback: Add email adapter and toggle via rules/env.
+
+### D-0005: Frontend Framework Migration
+- Context: Flet (Python→Flutter Web) has proven unreliable due to version compatibility issues, WebSocket fragility, and limited ecosystem. See EV-0004.
+- Options:
+  1) Continue with Flet, pinning versions and working around issues
+  2) Migrate to HTMX + FastAPI (stay Python-first, minimal JS)
+  3) Migrate to React/Next.js (industry standard, maximum polish)
+  4) Migrate to Reflex (Python→React compiler)
+- Decision: **Option 3 - React/Next.js**
+- Rationale:
+  - Industry-standard tooling with massive ecosystem
+  - Achieves "Premium" UI goal with modern component libraries (shadcn/ui, Tailwind)
+  - Clean architecture (ports/adapters) means backend services remain unchanged
+  - FastAPI provides excellent REST API foundation
+  - AI tools can generate React components from existing Flet specifications
+  - Long-term maintainability and hiring pool advantages
+- Implications:
+  - Must learn TypeScript/React basics (AI-assisted)
+  - Two-service deployment: Python API + Next.js frontend
+  - Migration requires phased approach (API first, then UI rebuild)
+  - Existing Flet code serves as functional specification
+- Rollback: HTMX fallback if React proves too complex.
+- Links: EV-0004, D-0001 (supersedes Flet choice)

@@ -1,12 +1,13 @@
-
 import hashlib
 import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 IGNORE_DIRS = {"__pycache__", ".DS_Store", ".git"}
 SRC_ROOT = Path("src")
+
 
 def get_file_hash(path: Path) -> str:
     """Compute basic SHA256 hash."""
@@ -18,10 +19,6 @@ def get_file_hash(path: Path) -> str:
         return sha256.hexdigest()
     except Exception:
         return "error"
-
-from typing import Any
-
-SRC_ROOT = Path("src")
 
 def generate_manifest(root: Path = SRC_ROOT) -> dict[str, Any]:
     manifest: dict[str, Any] = {

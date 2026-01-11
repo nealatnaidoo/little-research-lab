@@ -1,9 +1,10 @@
-import flet as ft
-from datetime import datetime
 import uuid
-from src.ui.theme import AppTheme
-from src.ui.state import AppState
+from datetime import datetime
+
 from src.domain.entities import User
+from src.ui.state import AppState
+from src.ui.theme import AppTheme
+
 
 def test_app_theme_modes():
     """Test that AppTheme returns correct color schemes for modes."""
