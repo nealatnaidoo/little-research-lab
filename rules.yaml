@@ -1,0 +1,118 @@
+project:
+  slug: "little-research-lab"
+  rules_version: "1.0.0"
+  required_sections: ["project", "security", "auth", "rbac"]
+
+security:
+  fail_fast_on_invalid_rules: true
+  allowed_link_protocols: ["http", "https", "mailto"]
+  disallowed_markdown_features: ["raw_html", "script", "iframe"]
+  csrf:
+    enabled: true
+    mode: "strict"
+
+auth:
+  password_hashing:
+    algorithm: "argon2"
+    min_length: 8
+  sessions:
+    ttl_minutes: 1440
+    rotate_on_login: true
+    store_tokens_hashed: true
+    cookie:
+      secure: true
+      http_only: true
+      same_site: "lax"
+
+rbac:
+  roles:
+    owner: ["*"]
+    admin: ["*"]
+    editor: ["content:*", "asset:*", "link:*"]
+    viewer: ["content:read", "link:read"]
+  public_permissions: ["content:read_public"]
+
+abac:
+  content_edit_rules:
+    - if:
+        owns_content: true
+      allow: ["content:edit", "content:delete"]
+    - if:
+        collaborator_scope_in: ["edit"]
+      allow: ["content:edit"]
+  asset_read_rules: []
+
+content:
+  slug:
+    min: 3
+    max: 100
+    pattern: "^[a-z0-9-]+$"
+  title:
+    min: 1
+    max: 200
+  summary:
+    max: 280
+  visibility_values: ["public", "unlisted", "private"]
+  status_values: ["draft", "scheduled", "published", "archived"]
+
+blocks:
+  max_blocks_per_item: 50
+  allowed_types: ["markdown", "image"]
+  schemas:
+    markdown:
+      required: ["text"]
+      properties:
+        text:
+          type: "string"
+          # min: 1 # Optional
+          max_bytes: 10000 
+    image:
+      required: ["src"]
+      properties:
+        src:
+          type: "string"
+        alt:
+          type: "string"
+        caption:
+          type: "string"
+
+uploads:
+  max_upload_bytes: 10485760 # 10MB
+  allowlist_mime_types: ["image/jpeg", "image/png", "application/pdf"]
+  allowlist_extensions: [".jpg", ".jpeg", ".png", ".pdf"]
+  quarantine:
+    enabled: false # Wait, model says dict[str, bool]... quarantine: enabled: bool?
+    # Let's check model definition.
+    # class UploadsRules(BaseModel): quarantine: dict[str, bool]
+    # This implies quarantine is a dict of bool flags? Or maybe specific overrides?
+    # Assuming "enabled": true/false is valid.
+    
+embeds:
+  allowlist:
+    - provider: "youtube"
+      match: "^https://www.youtube.com/watch"
+  deny_if_not_allowlisted: true
+
+scheduling:
+  publish_check_mode: ["cron"]
+  max_scheduled_days_ahead: 365
+  allow_backdate_publish_at: false
+
+rate_limits:
+  login:
+    window_seconds: 60
+    max_attempts: 5
+  upload:
+    window_seconds: 3600
+    max_requests: 100
+
+ops:
+  data_dir_required: true
+  required_env: []
+  bootstrap_admin:
+    enabled_if_no_users: true
+    required_env_when_enabled: []
+  backups:
+    include: ["lrl.db", "filestore"]
+    backup_dir_name: "backups"
+    retention_count: 5

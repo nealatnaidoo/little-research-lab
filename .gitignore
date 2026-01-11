@@ -1,0 +1,87 @@
+# =============================================================================
+# Git Ignore - Little Research Lab
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+coverage.xml
+
+# Local data (should not be committed)
+lrl.db
+*.sqlite
+*.sqlite3
+filestore/
+backups/
+data/
+
+# Logs
+*.log
+logs/
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Artifacts from CI/testing
+artifacts/
+evidence/
+*.json.report
+
+# Temporary files
+*.bak
+*.tmp
+*.swp
+*~
+
+# Test artifacts
+backup_test.zip
+browser_test.db
+test_*.db
+
+# Fly.io local state (optional - remove if you want to track)
+# .fly/
