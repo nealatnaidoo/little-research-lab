@@ -3,6 +3,9 @@ import { PublicService } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OpenAPI } from "@/lib/api";
 
+// Force dynamic rendering - no caching so content updates appear immediately
+export const dynamic = 'force-dynamic';
+
 // Ensure Server Components use the right base URL
 OpenAPI.BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
