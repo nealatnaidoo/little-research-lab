@@ -1,15 +1,22 @@
+import { generateHTML } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+import Image from "@tiptap/extension-image";
 import { ContentBlockModel } from "@/lib/api";
 
 type BlockProps = {
     block: ContentBlockModel;
 }
 
+// Extensions for generating HTML from TipTap JSON
+const extensions = [
+    StarterKit,
+    Link.configure({ openOnClick: false }),
+    Image,
+];
+
 export function BlockRenderer({ block }: BlockProps) {
     if (!block.data_json) return null;
-
-    // Parse data_json if it is a string (API client might type it as any/Record but it could be stringified JSON from backend?)
-    // Our backend schema says `data_json` is `dict[str, Any]`.
-    // In generated client `ContentBlock` -> `data_json: any`.
 
     let data = block.data_json;
     if (typeof data === "string") {
@@ -22,12 +29,24 @@ export function BlockRenderer({ block }: BlockProps) {
 
     switch (block.block_type) {
         case "markdown":
-            // MVP: We are storing HTML in data_json.text from Tiptap.
-            // We should dangerouslySetInnerHTML.
+            // Handle TipTap JSON format (new) or legacy text format
+            let html = "";
+            if (data.tiptap) {
+                // New format: TipTap JSON document
+                try {
+                    html = generateHTML(data.tiptap, extensions);
+                } catch (e) {
+                    console.error("Error generating HTML from TipTap:", e);
+                    html = "<p>Error rendering content</p>";
+                }
+            } else if (data.text) {
+                // Legacy format: raw HTML/text
+                html = data.text;
+            }
             return (
                 <div
                     className="prose dark:prose-invert max-w-none my-4"
-                    dangerouslySetInnerHTML={{ __html: data.text || "" }}
+                    dangerouslySetInnerHTML={{ __html: html }}
                 />
             );
         case "image":
