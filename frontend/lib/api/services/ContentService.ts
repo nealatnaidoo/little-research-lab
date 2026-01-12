@@ -70,22 +70,23 @@ function transformResponse(data: any): ContentItem {
 
 export class ContentService {
 
-    public static list(status?: string): CancelablePromise<ContentItem[]> {
-        return __request(OpenAPI, {
+    public static async list(status?: string): Promise<ContentItem[]> {
+        const items: any[] = await __request(OpenAPI, {
             method: 'GET',
             url: '/api/content',
             query: { 'status': status },
-        }).then((items: any[]) => items.map(transformResponse));
+        });
+        return items.map(transformResponse);
     }
 
-    public static create(data: {
+    public static async create(data: {
         title: string;
         slug: string;
         description?: string;
         body?: any;
         status?: string;
         type?: string;
-    }): CancelablePromise<ContentItem> {
+    }): Promise<ContentItem> {
         // Convert to backend format
         const backendData = {
             title: data.title,
@@ -94,27 +95,29 @@ export class ContentService {
             type: data.type || "post",
             blocks: bodyToBlocks(data.body),
         };
-        return __request(OpenAPI, {
+        const result = await __request(OpenAPI, {
             method: 'POST',
             url: '/api/content',
             body: backendData,
-        }).then(transformResponse);
+        });
+        return transformResponse(result);
     }
 
-    public static get(id: string): CancelablePromise<ContentItem> {
-        return __request(OpenAPI, {
+    public static async get(id: string): Promise<ContentItem> {
+        const result = await __request(OpenAPI, {
             method: 'GET',
             url: `/api/content/${id}`,
-        }).then(transformResponse);
+        });
+        return transformResponse(result);
     }
 
-    public static update(id: string, data: {
+    public static async update(id: string, data: {
         title?: string;
         slug?: string;
         description?: string;
         body?: any;
         status?: string;
-    }): CancelablePromise<ContentItem> {
+    }): Promise<ContentItem> {
         // Convert to backend format
         const backendData: Record<string, any> = {};
         if (data.title !== undefined) backendData.title = data.title;
@@ -122,11 +125,12 @@ export class ContentService {
         if (data.description !== undefined) backendData.summary = data.description;
         if (data.body !== undefined) backendData.blocks = bodyToBlocks(data.body);
 
-        return __request(OpenAPI, {
+        const result = await __request(OpenAPI, {
             method: 'PUT',
             url: `/api/content/${id}`,
             body: backendData,
-        }).then(transformResponse);
+        });
+        return transformResponse(result);
     }
 
     public static delete(id: string): CancelablePromise<void> {
@@ -136,14 +140,15 @@ export class ContentService {
         });
     }
 
-    public static transition(id: string, data: {
+    public static async transition(id: string, data: {
         status: string;
         publish_at?: string;
-    }): CancelablePromise<ContentItem> {
-        return __request(OpenAPI, {
+    }): Promise<ContentItem> {
+        const result = await __request(OpenAPI, {
             method: 'POST',
             url: `/api/content/${id}/transition`,
             body: data,
-        }).then(transformResponse);
+        });
+        return transformResponse(result);
     }
 }
