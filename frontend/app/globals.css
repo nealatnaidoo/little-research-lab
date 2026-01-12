@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -245,6 +246,26 @@
     letter-spacing: 0.05em;
     font-size: 0.75rem;
     font-weight: 500;
+  }
+
+  /* Prose content spacing */
+  .prose p {
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+  }
+
+  .prose p:empty {
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    min-height: 1em;
+  }
+
+  .prose > *:first-child {
+    margin-top: 0;
+  }
+
+  .prose > *:last-child {
+    margin-bottom: 0;
   }
 }
 
