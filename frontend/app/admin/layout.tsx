@@ -10,8 +10,6 @@ import {
     Users,
     Settings,
     LogOut,
-    Menu,
-    ChevronLeft
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -64,17 +62,29 @@ export default function AdminLayout({
     }
 
     if (!authorized) {
-        return <div className="flex h-screen items-center justify-center">Loading Admin...</div>
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="text-muted-foreground">Loading...</div>
+            </div>
+        )
     }
 
     return (
         <SidebarProvider>
             <div className="flex min-h-screen w-full">
                 <Sidebar>
-                    <SidebarHeader>
-                        <div className="px-4 py-2 font-bold text-lg text-primary">Little Research Lab</div>
+                    <SidebarHeader className="border-b py-4">
+                        <div className="px-4">
+                            {/* Subtle retro branding */}
+                            <div className="font-arcade text-[8px] text-primary tracking-widest">
+                                LITTLE RESEARCH LAB
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                                Admin
+                            </div>
+                        </div>
                     </SidebarHeader>
-                    <SidebarContent>
+                    <SidebarContent className="py-4">
                         <SidebarGroup>
                             <SidebarGroupLabel>Platform</SidebarGroupLabel>
                             <SidebarMenu>
@@ -127,7 +137,7 @@ export default function AdminLayout({
                             </SidebarMenu>
                         </SidebarGroup>
                     </SidebarContent>
-                    <SidebarFooter>
+                    <SidebarFooter className="border-t py-4">
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <SidebarMenuButton onClick={handleLogout}>
@@ -139,10 +149,9 @@ export default function AdminLayout({
                     </SidebarFooter>
                 </Sidebar>
 
-                <main className="flex-1 overflow-auto bg-sidebar-accent/10">
-                    <header className="flex h-16 items-center gap-4 border-b bg-background px-6 shadow-sm">
+                <main className="flex-1 overflow-auto">
+                    <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
                         <SidebarTrigger />
-                        <div className="font-medium">Admin Workspace</div>
                     </header>
                     <div className="p-6">
                         {children}

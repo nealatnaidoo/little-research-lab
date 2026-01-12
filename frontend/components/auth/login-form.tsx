@@ -22,7 +22,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -48,26 +47,18 @@ export function LoginForm() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true)
         try {
-            // NOTE: Our API Client might need configuration for BASE URL?
-            // We should check OpenAPI config. Defaults to localhost:8000 usually if configured?
-            // Actually generated client usually defaults to empty or spec host.
-            // We might need to override OpenAPI.BASE.
-
-            // For now, let's assume proxy or direct hit.
-            // If direct hit, we need CORS (enabled in backend).
-
             await AuthService.loginForAccessTokenApiAuthLoginPost({
                 username: values.email,
                 password: values.password
             })
 
-            toast.success("Logged in successfully")
+            toast.success("Welcome back!")
             router.push("/admin")
             router.refresh()
 
         } catch (error: any) {
             console.error(error)
-            toast.error("Login failed. Check credentials.")
+            toast.error("Login failed. Check your credentials.")
         } finally {
             setIsLoading(false)
         }
@@ -75,10 +66,14 @@ export function LoginForm() {
 
     return (
         <Card className="w-full max-w-sm">
-            <CardHeader>
-                <CardTitle className="text-2xl">Login</CardTitle>
+            <CardHeader className="text-center space-y-2">
+                {/* Subtle retro branding */}
+                <div className="font-arcade text-[8px] text-primary tracking-widest mb-2">
+                    LITTLE RESEARCH LAB
+                </div>
+                <CardTitle className="text-xl">Welcome back</CardTitle>
                 <CardDescription>
-                    Enter your email below to login to your account.
+                    Enter your credentials to continue
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -92,8 +87,9 @@ export function LoginForm() {
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="m@example.com"
+                                            placeholder="you@example.com"
                                             data-testid="login-email"
+                                            autoComplete="email"
                                             {...field}
                                         />
                                     </FormControl>
@@ -111,6 +107,7 @@ export function LoginForm() {
                                         <Input
                                             type="password"
                                             data-testid="login-password"
+                                            autoComplete="current-password"
                                             {...field}
                                         />
                                     </FormControl>

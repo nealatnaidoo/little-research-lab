@@ -3,11 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   RETRO-MODERN THEME
+   A subtle nod to 80s aesthetics with modern readability
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-terminal);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-arcade);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,6 +43,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Soft pastel accent colors with retro warmth */
+  --color-retro-cyan: #89c9b8;
+  --color-retro-magenta: #b4a7d6;
+  --color-retro-green: #a8d4a2;
+  --color-retro-yellow: #e8d49c;
+  --color-retro-orange: #e8a598;
+  --color-retro-pink: #d4a5b9;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -46,82 +59,211 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLOR SYSTEM - Modern with retro undertones
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.488 0.243 264.376); /* Deep Blue/Purple for Light Primary? No, Teal */
-  /* Replaced with Teal: 0.6 0.15 180 (approx) -> oklch(0.646 0.222 180) */
-  --primary: oklch(0.45 0.15 200); /* Darker Teal/Blue for light mode */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.45 0.15 200);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.5rem;
+
+  /* Light mode - clean and modern */
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #0d9488;
+
+  /* Charts */
+  --chart-1: #0d9488;
+  --chart-2: #8b5cf6;
+  --chart-3: #22c55e;
+  --chart-4: #eab308;
+  --chart-5: #f97316;
+
+  /* Sidebar */
+  --sidebar: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #0d9488;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #0d9488;
 }
 
 .dark {
-  --background: oklch(0.12 0.05 260); /* Deep Blue Background */
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.15 0.05 260);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.15 0.05 260);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.7 0.15 190); /* Cyan/Teal for Dark Mode */
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.15 190);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.15 0.05 260);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.7 0.15 190);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark mode - clean pastel with subtle retro warmth */
+  --background: #1a1a1f;
+  --foreground: #e8e8ec;
+  --card: #222228;
+  --card-foreground: #e8e8ec;
+  --popover: #222228;
+  --popover-foreground: #e8e8ec;
+  --primary: #89c9b8;
+  --primary-foreground: #1a1a1f;
+  --secondary: #2a2a32;
+  --secondary-foreground: #e8e8ec;
+  --muted: #2a2a32;
+  --muted-foreground: #9ca3af;
+  --accent: #b4a7d6;
+  --accent-foreground: #1a1a1f;
+  --destructive: #e8a598;
+  --border: #363640;
+  --input: #363640;
+  --ring: #89c9b8;
+
+  /* Pastel chart colors with retro warmth */
+  --chart-1: #89c9b8;
+  --chart-2: #b4a7d6;
+  --chart-3: #a8d4a2;
+  --chart-4: #e8d49c;
+  --chart-5: #e8a598;
+
+  --sidebar: #1a1a1f;
+  --sidebar-foreground: #e8e8ec;
+  --sidebar-primary: #89c9b8;
+  --sidebar-primary-foreground: #1a1a1f;
+  --sidebar-accent: #2a2a32;
+  --sidebar-accent-foreground: #e8e8ec;
+  --sidebar-border: #363640;
+  --sidebar-ring: #89c9b8;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUBTLE RETRO EFFECTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Subtle glow for accent elements only */
+.retro-glow {
+  box-shadow: 0 0 20px rgba(137, 201, 184, 0.2);
+}
+
+/* Typing cursor - subtle accent */
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: "_";
+  animation: cursor-blink 1s step-end infinite;
+  color: var(--primary);
+}
+
+/* Subtle pulse for status indicators */
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.status-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBAR - Clean modern style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECTION - Retro accent
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: #b4a7d6;
+  color: #1a1a1f;
+}
+
+::-moz-selection {
+  background: #b4a7d6;
+  color: #1a1a1f;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE LAYER
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-terminal), system-ui, sans-serif;
+  }
+
+  /* Clean heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Links */
+  a {
+    transition: color 0.2s ease;
+  }
+
+  /* Code blocks - subtle retro touch */
+  code, pre {
+    font-family: var(--font-mono), monospace;
+  }
+
+  /* Tables */
+  th {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Font utilities */
+  .font-arcade {
+    font-family: var(--font-arcade), monospace;
+  }
+
+  .font-terminal {
+    font-family: var(--font-terminal), system-ui, sans-serif;
+  }
+
+  /* Subtle text glow for accents */
+  .text-glow-subtle {
+    text-shadow: 0 0 10px currentColor;
   }
 }

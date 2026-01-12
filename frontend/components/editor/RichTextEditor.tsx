@@ -23,6 +23,7 @@ export function RichTextEditor({ content = "", onChange, editable = true }: Rich
         ],
         content: content,
         editable: editable,
+        immediatelyRender: false,
         onUpdate: ({ editor }) => {
             onChange(editor.getJSON())
         },

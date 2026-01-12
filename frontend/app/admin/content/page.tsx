@@ -7,7 +7,10 @@ import {
     Plus,
     MoreHorizontal,
     Pencil,
-    Trash2
+    Trash2,
+    Send,
+    Clock,
+    Loader2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -30,15 +33,23 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ContentService } from "@/lib/api"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ContentService, type ContentItem } from "@/lib/api"
+import { SchedulerService } from "@/lib/api/services/SchedulerService"
 import { toast } from "sonner"
+
+type StatusFilter = "all" | "draft" | "scheduled" | "published"
 
 export default function ContentListPage() {
     const router = useRouter()
-    const [items, setItems] = useState<any[]>([])
+    const [items, setItems] = useState<ContentItem[]>([])
     const [loading, setLoading] = useState(true)
+    const [publishingId, setPublishingId] = useState<string | null>(null)
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
     useEffect(() => {
         fetchContent()
@@ -57,19 +68,77 @@ export default function ContentListPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure?")) return;
+        if (!confirm("Are you sure you want to delete this content?")) return
         try {
-            await ContentService.delete(id);
-            toast.success("Deleted item");
-            fetchContent();
+            await ContentService.delete(id)
+            toast.success("Content deleted")
+            fetchContent()
         } catch (e) {
             console.error(e)
-            toast.error("Delete failed");
+            toast.error("Delete failed")
         }
     }
 
+    const handlePublishNow = async (id: string) => {
+        try {
+            setPublishingId(id)
+            await SchedulerService.publishNow(id)
+            toast.success("Content published!")
+            fetchContent()
+        } catch (e) {
+            console.error(e)
+            toast.error("Failed to publish")
+        } finally {
+            setPublishingId(null)
+        }
+    }
+
+    const filteredItems = items.filter((item) => {
+        if (statusFilter === "all") return true
+        return item.status === statusFilter
+    })
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case "published":
+                return <Badge variant="success">Published</Badge>
+            case "scheduled":
+                return (
+                    <Badge
+                        variant="outline"
+                        className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-800"
+                    >
+                        Scheduled
+                    </Badge>
+                )
+            case "draft":
+            default:
+                return <Badge variant="secondary">Draft</Badge>
+        }
+    }
+
+    const formatDate = (dateStr: string | null | undefined) => {
+        if (!dateStr) return "-"
+        const date = new Date(dateStr)
+        return date.toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+        })
+    }
+
+    const statusCounts = {
+        all: items.length,
+        draft: items.filter((i) => i.status === "draft").length,
+        scheduled: items.filter((i) => i.status === "scheduled").length,
+        published: items.filter((i) => i.status === "published").length,
+    }
+
     if (loading) {
-        return <div>Loading content...</div>
+        return (
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
     }
 
     return (
@@ -84,9 +153,34 @@ export default function ContentListPage() {
                 </Button>
             </div>
 
+            <Tabs
+                defaultValue="all"
+                value={statusFilter}
+                onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            >
+                <TabsList>
+                    <TabsTrigger value="all">
+                        All ({statusCounts.all})
+                    </TabsTrigger>
+                    <TabsTrigger value="draft">
+                        Drafts ({statusCounts.draft})
+                    </TabsTrigger>
+                    <TabsTrigger value="scheduled">
+                        Scheduled ({statusCounts.scheduled})
+                    </TabsTrigger>
+                    <TabsTrigger value="published">
+                        Published ({statusCounts.published})
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
+
             <Card>
                 <CardHeader>
-                    <CardTitle>All Items</CardTitle>
+                    <CardTitle>
+                        {statusFilter === "all"
+                            ? "All Items"
+                            : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -95,45 +189,84 @@ export default function ContentListPage() {
                                 <TableHead>Title</TableHead>
                                 <TableHead>Slug</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Published</TableHead>
+                                <TableHead>Scheduled / Published</TableHead>
                                 <TableHead className="w-[70px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {items.length === 0 ? (
+                            {filteredItems.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                                    <TableCell
+                                        colSpan={5}
+                                        className="text-center text-muted-foreground h-24"
+                                    >
                                         No content found.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                items.map((item) => (
+                                filteredItems.map((item) => (
                                     <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.title}</TableCell>
-                                        <TableCell>{item.slug}</TableCell>
-                                        <TableCell>
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${item.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                {item.status}
-                                            </span>
+                                        <TableCell className="font-medium">
+                                            <Link
+                                                href={`/admin/content/${item.id}`}
+                                                className="hover:underline"
+                                            >
+                                                {item.title}
+                                            </Link>
                                         </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                            {item.slug}
+                                        </TableCell>
+                                        <TableCell>{getStatusBadge(item.status)}</TableCell>
                                         <TableCell>
-                                            {item.publish_at ? new Date(item.publish_at).toLocaleDateString() : '-'}
+                                            {item.status === "scheduled" && item.publish_at ? (
+                                                <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+                                                    <Clock className="h-3 w-3" />
+                                                    {formatDate(item.publish_at)}
+                                                </div>
+                                            ) : item.publish_at ? (
+                                                <span className="text-sm text-muted-foreground">
+                                                    {formatDate(item.publish_at)}
+                                                </span>
+                                            ) : (
+                                                "-"
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="h-8 w-8 p-0"
+                                                    >
                                                         <span className="sr-only">Open menu</span>
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => router.push(`/admin/content/${item.id}`)}>
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            router.push(`/admin/content/${item.id}`)
+                                                        }
+                                                    >
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Edit
                                                     </DropdownMenuItem>
+                                                    {item.status === "draft" && (
+                                                        <DropdownMenuItem
+                                                            onClick={() => handlePublishNow(item.id)}
+                                                            disabled={publishingId === item.id}
+                                                        >
+                                                            {publishingId === item.id ? (
+                                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Send className="mr-2 h-4 w-4" />
+                                                            )}
+                                                            Publish Now
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         onClick={() => handleDelete(item.id)}
                                                         className="text-red-600 focus:text-red-600"

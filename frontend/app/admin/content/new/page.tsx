@@ -52,8 +52,8 @@ export default function NewContentPage() {
                 title: values.title,
                 slug: values.slug,
                 description: values.description,
-                body: values.body, // JSON
-                // defaults: status=draft, type=article
+                body: values.body,
+                type: "post",
             })
             toast.success("Content created")
             router.push("/admin/content")

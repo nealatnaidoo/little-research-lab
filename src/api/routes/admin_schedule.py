@@ -20,6 +20,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from src.api.deps import get_content_repo, get_clock, Settings, get_settings
+from src.adapters.sqlite.repos import SQLiteContentRepo
+from src.adapters.clock import SystemClock
+from src.domain.state import transition
 from src.components.scheduler import (
     PublishJob,
     SchedulerConfig,
@@ -227,24 +231,52 @@ class MockPublishJobRepo:
 
 
 class MockPublisher:
-    """Mock publisher for testing."""
+    """Mock publisher for testing - always succeeds."""
 
     def publish(self, content_id: UUID) -> tuple[bool, str | None]:
         return True, None
 
 
-# Singleton instances for testing
+class ContentPublisher:
+    """Real publisher that updates content status in the database."""
+
+    def __init__(self, content_repo: SQLiteContentRepo, clock: SystemClock) -> None:
+        self._content_repo = content_repo
+        self._clock = clock
+
+    def publish(self, content_id: UUID) -> tuple[bool, str | None]:
+        """Publish content by updating its status to 'published'."""
+        try:
+            # Get content item
+            item = self._content_repo.get_by_id(content_id)
+            if not item:
+                return False, f"Content {content_id} not found"
+
+            # Transition to published status
+            now = self._clock.now()
+            updated_item = transition(item, "published", now)
+            self._content_repo.save(updated_item)
+
+            return True, None
+        except ValueError as e:
+            return False, str(e)
+        except Exception as e:
+            return False, f"Failed to publish: {e}"
+
+
+# Singleton instances
 _repo = MockPublishJobRepo()
-_publisher = MockPublisher()
 
 
-def get_scheduler_service() -> SchedulerService:
-    """Get scheduler service dependency."""
-    # Cast to Any to work around type mismatch between two PublishJob definitions
-    # (src.components.scheduler.models.PublishJob vs src.core.entities.PublishJob)
+def get_scheduler_service(
+    content_repo: SQLiteContentRepo = Depends(get_content_repo),
+    clock: SystemClock = Depends(get_clock),
+) -> SchedulerService:
+    """Get scheduler service dependency with real publisher."""
+    publisher = ContentPublisher(content_repo, clock)
     return SchedulerService(
         repo=cast(Any, _repo),
-        publisher=_publisher,
+        publisher=publisher,
         config=SchedulerConfig(),
     )
 
