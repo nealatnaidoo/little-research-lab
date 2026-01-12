@@ -1,4 +1,4 @@
-import { generateHTML } from "@tiptap/core";
+import { generateHTML } from "@tiptap/html";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
@@ -9,8 +9,12 @@ type BlockProps = {
 }
 
 // Extensions for generating HTML from TipTap JSON
+// Note: StarterKit includes Document, Paragraph, Text, Bold, Italic, etc.
 const extensions = [
-    StarterKit,
+    StarterKit.configure({
+        // Disable history for static rendering
+        history: false,
+    }),
     Link.configure({ openOnClick: false }),
     Image,
 ];
