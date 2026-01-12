@@ -159,3 +159,20 @@ class AuditEvent(BaseModel):
     target_id: str
     meta_json: dict[str, Any]
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --- Redirects ---
+
+
+class Redirect(BaseModel):
+    """URL redirect mapping."""
+
+    id: UUID = Field(default_factory=uuid4)
+    source_path: str  # e.g., "/old-page"
+    target_path: str  # e.g., "/new-page"
+    status_code: int = 301  # 301 or 302
+    enabled: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: UUID | None = None
+    notes: str | None = None

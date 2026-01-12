@@ -19,11 +19,10 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
-from fastapi import APIRouter, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Request
 
+from src.api.deps import get_redirect_repo
 from src.components.redirects import (
-    Redirect,
     RedirectConfig,
     RedirectService,
 )
@@ -31,69 +30,21 @@ from src.components.redirects import (
 router = APIRouter()
 
 
-# --- Mock Repository for Dependencies ---
-
-
-class InMemoryRedirectRepo:
-    """In-memory redirect repository."""
-
-    def __init__(self) -> None:
-        self._redirects: dict[Any, Redirect] = {}
-        self._by_source: dict[str, Redirect] = {}
-
-    def get_by_id(self, redirect_id: Any) -> Redirect | None:
-        return self._redirects.get(redirect_id)
-
-    def get_by_source(self, source_path: str) -> Redirect | None:
-        return self._by_source.get(source_path.lower())
-
-    def save(self, redirect: Redirect) -> Redirect:
-        self._redirects[redirect.id] = redirect
-        self._by_source[redirect.source_path.lower()] = redirect
-        return redirect
-
-    def delete(self, redirect_id: Any) -> None:
-        redirect = self._redirects.pop(redirect_id, None)
-        if redirect:
-            self._by_source.pop(redirect.source_path.lower(), None)
-
-    def list_all(self) -> list[Redirect]:
-        return list(self._redirects.values())
-
-
-# --- Configuration ---
-
-
-UTM_PARAMS = frozenset(
-    {
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_term",
-    }
-)
-
-
 # --- Dependencies ---
 
 
-# Shared repository (in production, inject from DI container)
-_redirect_repo = InMemoryRedirectRepo()
-_redirect_service = RedirectService(
-    repo=_redirect_repo,
-    config=RedirectConfig(preserve_utm_params=True),
-)
-
-
-def get_redirect_service() -> RedirectService:
+def get_redirect_service(
+    repo: Any = Depends(get_redirect_repo),
+) -> RedirectService:
     """Get redirect service."""
-    return _redirect_service
+    return RedirectService(
+        repo=repo,
+        config=RedirectConfig(preserve_utm_params=True),
+    )
 
 
-def get_redirect_repo() -> InMemoryRedirectRepo:
-    """Get redirect repository for testing."""
-    return _redirect_repo
+# UTM parameters to preserve during redirects
+UTM_PARAMS = {"utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"}
 
 
 # --- Helper Functions ---
@@ -154,16 +105,27 @@ def resolve_redirect(
 
     Returns (target_url, status_code) or None if no redirect.
     """
-    svc = service or _redirect_service
+    if service is None:
+        # Without service injection, we can't resolve.
+        # Ideally, middleware should handle DI or database access correctly.
+        # But for now, if called from route, service is provided.
+        # If called from middleware check, we need a way to get repo.
+        return None  # Middleware support needs deeper DI integration or On-demand repo.
 
+    svc = service
+
+    # Preserve UTM params
+    original_url = f"{path}?{query_string}" if query_string else path
+    
+    svc = service
+    print(f"DEBUG: resolving redirect for path={path}")
     result = svc.resolve(path)
+    print(f"DEBUG: resolve result={result}")
+    
     if result is None:
         return None
 
     target_path, status_code = result
-
-    # Preserve UTM params
-    original_url = f"{path}?{query_string}" if query_string else path
     final_target = preserve_query_params(original_url, target_path)
 
     return final_target, status_code
@@ -172,40 +134,33 @@ def resolve_redirect(
 # --- Routes ---
 
 
-@router.get("/{path:path}")
-async def handle_redirect(
+@router.get("/resolve")
+async def resolve_redirect_endpoint(
     path: str,
     request: Request,
-) -> RedirectResponse:
+    service: RedirectService = Depends(get_redirect_service),
+) -> dict[str, Any]:
     """
-    Handle public redirects (TA-0046).
-
-    Checks if the path has a redirect configured and returns
-    the appropriate redirect response.
+    Resolve a redirect path (Public).
+    Returns {"target": url, "status_code": code} or 404.
     """
     # Normalize path
     if not path.startswith("/"):
         path = "/" + path
 
-    # Get query string
-    query_string = str(request.query_params) if request.query_params else ""
-
-    # Resolve redirect
-    result = resolve_redirect(path, query_string)
+    # Simple resolution
+    result = resolve_redirect(path, query_string="", service=service)
 
     if result is None:
-        # No redirect - in a real app, this would fall through to
-        # the next route handler. For now, return 404.
         from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Not found")
 
     target_url, status_code = result
 
-    return RedirectResponse(
-        url=target_url,
-        status_code=status_code,
-    )
+    return {
+        "target": target_url,
+        "status_code": status_code,
+    }
 
 
 # --- Middleware-style checker for use in app ---

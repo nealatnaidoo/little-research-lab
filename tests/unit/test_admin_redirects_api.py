@@ -9,26 +9,79 @@ Test assertions:
 
 from __future__ import annotations
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.api.routes.admin_redirects import _redirect_repo, router
+from src.api.routes.admin_redirects import get_redirect_repo, router
+from src.components.redirects import Redirect
 
-# --- Test Client Setup ---
+# --- In-Memory Repository for Testing ---
+
+
+class InMemoryRedirectRepo:
+    """In-memory redirect repository for testing."""
+
+    def __init__(self) -> None:
+        self._redirects: dict[UUID, Redirect] = {}
+        self._by_source: dict[str, UUID] = {}
+
+    def get_by_id(self, redirect_id: UUID) -> Redirect | None:
+        return self._redirects.get(redirect_id)
+
+    def get_by_source(self, source_path: str) -> Redirect | None:
+        redirect_id = self._by_source.get(source_path)
+        if redirect_id is None:
+            return None
+        return self._redirects.get(redirect_id)
+
+    def save(self, redirect: Redirect) -> Redirect:
+        # Remove old source mapping if updating
+        if redirect.id in self._redirects:
+            old = self._redirects[redirect.id]
+            if old.source_path in self._by_source:
+                del self._by_source[old.source_path]
+
+        self._redirects[redirect.id] = redirect
+        self._by_source[redirect.source_path] = redirect.id
+        return redirect
+
+    def delete(self, redirect_id: UUID) -> None:
+        redirect = self._redirects.get(redirect_id)
+        if redirect:
+            if redirect.source_path in self._by_source:
+                del self._by_source[redirect.source_path]
+            del self._redirects[redirect_id]
+
+    def list_all(self) -> list[Redirect]:
+        return list(self._redirects.values())
+
+    def clear(self) -> None:
+        """Clear all redirects (for testing)."""
+        self._redirects.clear()
+        self._by_source.clear()
+
+
+# --- Test Fixtures ---
 
 
 @pytest.fixture
-def client() -> TestClient:
-    """Test client with fresh repository."""
-    # Clear the repository before each test
-    _redirect_repo._redirects.clear()
-    _redirect_repo._by_source.clear()
+def test_repo() -> InMemoryRedirectRepo:
+    """Fresh in-memory repository for each test."""
+    return InMemoryRedirectRepo()
 
+
+@pytest.fixture
+def client(test_repo: InMemoryRedirectRepo) -> TestClient:
+    """Test client with dependency override."""
     app = FastAPI()
     app.include_router(router)
+
+    # Override the dependency
+    app.dependency_overrides[get_redirect_repo] = lambda: test_repo
+
     return TestClient(app)
 
 

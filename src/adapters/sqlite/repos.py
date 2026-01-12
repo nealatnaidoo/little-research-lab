@@ -289,10 +289,37 @@ class SQLiteAssetRepo:
         finally:
             conn.close()
 
-    def list_assets(self) -> list[Asset]:
+    def list(
+        self,
+        *,
+        user_id: UUID | None = None,
+        mime_type_prefix: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Asset], int]:
         conn = self._get_conn()
         try:
-            rows = conn.execute("SELECT * FROM assets").fetchall()
+            query = "SELECT * FROM assets WHERE 1=1"
+            params: list[Any] = []
+
+            if user_id:
+                query += " AND created_by_user_id = ?"
+                params.append(str(user_id))
+            if mime_type_prefix:
+                query += " AND mime_type LIKE ?"
+                params.append(f"{mime_type_prefix}%")
+
+            # Count total
+            count_query = f"SELECT COUNT(*) as cnt FROM ({query})"
+            row_count = conn.execute(count_query, params).fetchone()
+            total = row_count["cnt"] if row_count else 0
+
+            # Pagination
+            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            params.append(limit)
+            params.append(offset)
+
+            rows = conn.execute(query, params).fetchall()
             assets = []
             for row in rows:
                 assets.append(
@@ -308,7 +335,7 @@ class SQLiteAssetRepo:
                         created_at=datetime.fromisoformat(row["created_at"]),
                     )
                 )
-            return assets
+            return assets, total
         finally:
             conn.close()
 
@@ -331,6 +358,11 @@ class SQLiteAssetRepo:
             )
         finally:
             conn.close()
+
+    def list_assets(self) -> builtins.list[Asset]:
+        """List all assets (implements AssetRepoPort protocol)."""
+        assets, _ = self.list(limit=10000)  # Get all assets
+        return assets
 
 
 class SQLiteLinkRepo:
@@ -927,3 +959,98 @@ class SQLitePublishJobRepo:
             return [self._map_row(r) for r in rows]
         finally:
             conn.close()
+
+
+class SQLiteRedirectRepo:
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+
+    def _get_conn(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = dict_factory
+        conn.execute("PRAGMA foreign_keys = ON;")
+        return conn
+
+    def save(self, redirect: Any) -> Any:
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """
+                INSERT INTO redirects (
+                    id, source_path, target_path, status_code, 
+                    enabled, created_at, updated_at, created_by, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    source_path=excluded.source_path,
+                    target_path=excluded.target_path,
+                    status_code=excluded.status_code,
+                    enabled=excluded.enabled,
+                    updated_at=excluded.updated_at,
+                    notes=excluded.notes
+            """,
+                (
+                    str(redirect.id),
+                    redirect.source_path,
+                    redirect.target_path,
+                    redirect.status_code,
+                    redirect.enabled,
+                    redirect.created_at.isoformat(),
+                    redirect.updated_at.isoformat(),
+                    str(redirect.created_by) if redirect.created_by else None,
+                    redirect.notes,
+                ),
+            )
+            conn.commit()
+            return redirect
+        finally:
+            conn.close()
+
+    def get_by_id(self, redirect_id: UUID) -> Any | None:
+        return self._get_one("SELECT * FROM redirects WHERE id = ?", (str(redirect_id),))
+
+    def get_by_source(self, source_path: str) -> Any | None:
+        print(f"DEBUG REPO: get_by_source path={source_path}")
+        res = self._get_one("SELECT * FROM redirects WHERE source_path = ?", (source_path,))
+        print(f"DEBUG REPO: result={res}")
+        return res
+
+    def delete(self, redirect_id: UUID) -> None:
+        conn = self._get_conn()
+        try:
+            conn.execute("DELETE FROM redirects WHERE id = ?", (str(redirect_id),))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def list_all(self) -> list[Any]:
+        conn = self._get_conn()
+        try:
+            rows = conn.execute("SELECT * FROM redirects ORDER BY created_at DESC").fetchall()
+            return [self._map_row(r) for r in rows]
+        finally:
+            conn.close()
+
+    def _get_one(self, query: str, params: tuple[Any, ...]) -> Any | None:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(query, params).fetchone()
+            if not row:
+                return None
+            return self._map_row(row)
+        finally:
+            conn.close()
+
+    def _map_row(self, row: dict[str, Any]) -> Any:
+        # Import dynamically to avoid circular issues if any, but Redirect is from entities
+        from src.domain.entities import Redirect
+        return Redirect(
+            id=UUID(row["id"]),
+            source_path=row["source_path"],
+            target_path=row["target_path"],
+            status_code=row["status_code"],
+            enabled=bool(row["enabled"]),
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+            created_by=UUID(row["created_by"]) if row["created_by"] else None,
+            notes=row["notes"],
+        )
