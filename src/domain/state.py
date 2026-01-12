@@ -5,17 +5,17 @@ from src.domain.entities import ContentItem, ContentStatus
 
 
 def can_transition(
-    current: ContentStatus, 
-    new: ContentStatus, 
-    publish_at: datetime | None = None, 
-    now: datetime | None = None
+    current: ContentStatus,
+    new: ContentStatus,
+    publish_at: datetime | None = None,
+    now: datetime | None = None,
 ) -> bool:
     """
     Determine if a state transition is allowed based on the rules.
     """
     if current == new:
         return True
-        
+
     if current == "draft":
         if new == "published":
             return True
@@ -25,14 +25,14 @@ def can_transition(
                 return False
             return publish_at > now
         if new == "archived":
-             return True # Drafts can be archived (soft delete)
+            return True  # Drafts can be archived (soft delete)
 
     if current == "scheduled":
         if new == "published":
             # Allowed when time is reached OR manual publish
             return True
         if new == "draft":
-            return True # Un-schedule
+            return True  # Un-schedule
         if new == "archived":
             return True
 
@@ -40,13 +40,14 @@ def can_transition(
         if new == "archived":
             return True
         if new == "draft":
-            return True # Un-publish
+            return True  # Un-publish
 
     if current == "archived":
         if new == "draft":
-            return True # Restore
-            
+            return True  # Restore
+
     return False
+
 
 def transition(item: ContentItem, new_status: ContentStatus, now: datetime) -> ContentItem:
     """
@@ -59,27 +60,24 @@ def transition(item: ContentItem, new_status: ContentStatus, now: datetime) -> C
     if not can_transition(item.status, new_status, item.publish_at, now):
         raise ValueError(f"Invalid transition from {item.status} to {new_status}")
 
-    updates: dict[str, Any] = {
-        "status": new_status,
-        "updated_at": now
-    }
+    updates: dict[str, Any] = {"status": new_status, "updated_at": now}
 
     if new_status == "published":
         # Ensure published_at is set.
         updates["published_at"] = now
-    
-    # If moving back to draft/scheduled, typically we might clear published_at 
+
+    # If moving back to draft/scheduled, typically we might clear published_at
     # or keep it as history.
     # Spec Invariants: "published implies published_at not null"
     # "scheduled implies publish_at not null"
-    
+
     if new_status == "draft":
-        updates["published_at"] = None # Reset
-        
+        updates["published_at"] = None  # Reset
+
     if new_status == "scheduled":
-        updates["published_at"] = None # Reset
+        updates["published_at"] = None  # Reset
         # publish_at must exist already for this to be valid
         if not item.publish_at:
-             raise ValueError("Cannot transition to scheduled without publish_at date")
+            raise ValueError("Cannot transition to scheduled without publish_at date")
 
     return item.model_copy(update=updates)

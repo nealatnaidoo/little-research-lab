@@ -38,13 +38,26 @@ app = FastAPI(
 )
 
 # --- Routers ---
-from src.api.routes import assets, auth, content, public, users  # noqa: E402
+from src.api.routes import (  # noqa: E402
+    admin_settings,
+    assets,
+    auth,
+    content,
+    public,
+    public_assets,
+    public_ssr,
+    users,
+)
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(admin_settings.router, prefix="/api/admin/settings", tags=["Admin Settings"])
+# admin_assets router removed
 app.include_router(content.router, prefix="/api/content", tags=["Content"])
 app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
+app.include_router(public_ssr.router, prefix="", tags=["SSR"])
+app.include_router(public_assets.router, prefix="/assets", tags=["Assets Public"])
 
 
 # CORS (Allow Frontend)

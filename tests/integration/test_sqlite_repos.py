@@ -13,14 +13,17 @@ from src.domain.entities import ContentBlock, ContentItem
 def db_path(tmp_path):
     return str(tmp_path / "test.db")
 
+
 @pytest.fixture
 def migrator(db_path):
-    return SQLiteMigrator(db_path, "migrations") 
+    return SQLiteMigrator(db_path, "migrations")
+
 
 @pytest.fixture
 def repo(db_path, migrator):
     migrator.run_migrations()
     return SQLiteContentRepo(db_path)
+
 
 @pytest.fixture
 def user_repo(db_path):
@@ -31,13 +34,19 @@ def user_repo(db_path):
         "(id, email, display_name, password_hash, status, created_at, updated_at) "
         "VALUES (?,?,?,?,?,?,?)",
         (
-             uid, "test@example.com", "Test User", "hash", "active", 
-             datetime.now().isoformat(), datetime.now().isoformat()
-        )
+            uid,
+            "test@example.com",
+            "Test User",
+            "hash",
+            "active",
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+        ),
     )
     conn.commit()
     conn.close()
     return uid
+
 
 def test_save_and_get_content(repo, user_repo):
     item_id = uuid4()
@@ -49,44 +58,56 @@ def test_save_and_get_content(repo, user_repo):
         slug="test-slug",
         title="Test Title",
         summary="Summary",
-        status="draft", # Using string literal
+        status="draft",  # Using string literal
         owner_user_id=owner_id,
-        visibility="private", # Using string literal
+        visibility="private",  # Using string literal
         blocks=[
             ContentBlock(block_type="markdown", data_json={"text": "Hello"}),
-            ContentBlock(block_type="image", data_json={"asset_id": str(uuid4())})
-        ]
+            ContentBlock(block_type="image", data_json={"asset_id": str(uuid4())}),
+        ],
     )
-    
+
     repo.save(item)
-    
+
     fetched = repo.get_by_id(item_id)
     assert fetched is not None
     assert fetched.title == "Test Title"
     assert len(fetched.blocks) == 2
     assert fetched.blocks[0].data_json["text"] == "Hello"
 
+
 def test_update_content(repo, user_repo):
     item_id = uuid4()
     item = ContentItem(
-        id=item_id, type="post", slug="update-slug", title="Original", 
-        status="draft", owner_user_id=user_repo, visibility="private"
+        id=item_id,
+        type="post",
+        slug="update-slug",
+        title="Original",
+        status="draft",
+        owner_user_id=user_repo,
+        visibility="private",
     )
     repo.save(item)
-    
+
     item.title = "Updated"
     repo.save(item)
-    
+
     fetched = repo.get_by_id(item_id)
     assert fetched.title == "Updated"
+
 
 def test_delete_content(repo, user_repo):
     item_id = uuid4()
     item = ContentItem(
-        id=item_id, type="post", slug="del-slug", title="Del", 
-        status="draft", owner_user_id=user_repo, visibility="private"
+        id=item_id,
+        type="post",
+        slug="del-slug",
+        title="Del",
+        status="draft",
+        owner_user_id=user_repo,
+        visibility="private",
     )
     repo.save(item)
-    
+
     repo.delete(item_id)
     assert repo.get_by_id(item_id) is None

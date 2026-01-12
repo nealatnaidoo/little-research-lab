@@ -58,7 +58,7 @@ class MatplotlibRenderer:
             ax.bar(x, y)
         elif c_type == "scatter":
             ax.scatter(x, y)
-        else: # line
+        else:  # line
             ax.plot(x, y)
 
         if title := spec.get("title"):
@@ -67,7 +67,7 @@ class MatplotlibRenderer:
             ax.set_xlabel(xlabel)
         if ylabel := spec.get("ylabel"):
             ax.set_ylabel(ylabel)
-            
+
         fig.tight_layout()
 
         # 4. Save to Bytes

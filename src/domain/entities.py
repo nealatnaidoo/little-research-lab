@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 # --- Enums / Literals ---
 RoleType = Literal["owner", "admin", "publisher", "editor", "viewer"]
-ContentType = Literal["post", "page"]
+ContentType = Literal["post", "page", "resource_pdf"]
 ContentStatus = Literal["draft", "scheduled", "published", "archived"]
 ContentVisibility = Literal["public", "unlisted", "private"]
 BlockType = Literal["markdown", "image", "chart", "embed", "divider"]
@@ -14,6 +14,7 @@ LinkStatus = Literal["active", "disabled"]
 CollabScope = Literal["view", "edit"]
 
 # --- User & Auth ---
+
 
 class User(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -25,11 +26,13 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class RoleAssignment(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     user_id: UUID
     role: RoleType
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class Session(BaseModel):
     id: str  # Token or Session ID
@@ -38,7 +41,9 @@ class Session(BaseModel):
     expires_at: datetime
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 # --- Assets ---
+
 
 class Asset(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -51,13 +56,16 @@ class Asset(BaseModel):
     created_by_user_id: UUID
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 # --- Content ---
+
 
 class ContentBlock(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     block_type: BlockType
     data_json: dict[str, Any]
     # Position is implicitly defined by list order in ContentItem
+
 
 class ContentRevision(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -67,6 +75,7 @@ class ContentRevision(BaseModel):
     created_by_user_id: UUID
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class ContentItem(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     type: ContentType
@@ -74,19 +83,21 @@ class ContentItem(BaseModel):
     title: str
     summary: str = ""
     status: ContentStatus = "draft"
-    
+
     publish_at: datetime | None = None
     published_at: datetime | None = None
-    
+
     owner_user_id: UUID
     visibility: ContentVisibility = "public"
-    
+
     blocks: list[ContentBlock] = Field(default_factory=list)
-    
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 # --- Links ---
+
 
 class LinkItem(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -99,13 +110,16 @@ class LinkItem(BaseModel):
     visibility: ContentVisibility = "public"
     group_id: UUID | None = None
 
+
 class LinkGroup(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     title: str
     position: int = 0
     visibility: ContentVisibility = "public"
 
+
 # --- Collaboration ---
+
 
 class Invite(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -116,14 +130,17 @@ class Invite(BaseModel):
     redeemed_by_user_id: UUID | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class CollaborationGrant(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     content_item_id: UUID
     user_id: UUID
     scope: CollabScope
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
+
 # --- Config/Audit ---
+
 
 class SiteSettings(BaseModel):
     site_title: str
@@ -132,6 +149,7 @@ class SiteSettings(BaseModel):
     theme: Literal["light", "dark", "system"] = "system"
     social_links_json: dict[str, str] = Field(default_factory=dict)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class AuditEvent(BaseModel):
     id: UUID = Field(default_factory=uuid4)

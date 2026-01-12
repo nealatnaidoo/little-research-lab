@@ -27,8 +27,7 @@ from src.ui.views.login import LoginView
 
 # Logging setup
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -42,9 +41,7 @@ RULES_PATH = os.environ.get("LRL_RULES_PATH", "rules.yaml")
 def init_db(db_path: str) -> None:
     conn = sqlite3.connect(db_path)
     try:
-        res = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='users';"
-        )
+        res = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';")
         if not res.fetchone():
             logger.info("Initializing database schema...")
             with open("migrations/001_initial.sql") as f:
@@ -111,8 +108,7 @@ def main(page: ft.Page) -> None:
             # Find first owner/admin user
             all_users = ctx.auth_service.user_repo.list_all()
             admin_user = next(
-                (u for u in all_users if "owner" in u.roles or "admin" in u.roles),
-                None
+                (u for u in all_users if "owner" in u.roles or "admin" in u.roles), None
             )
             if admin_user:
                 state.current_user = admin_user
@@ -133,11 +129,11 @@ def main(page: ft.Page) -> None:
     def make_view(route: str, content: ft.Control | ft.View) -> ft.View:
         def handle_nav(r: str) -> None:
             page.go(r)
-        
+
         def handle_logout() -> None:
             state.logout()
             page.go("/login")
-            
+
         def toggle_theme() -> None:
             if page.theme_mode == ft.ThemeMode.LIGHT:
                 page.theme_mode = ft.ThemeMode.DARK
@@ -151,13 +147,13 @@ def main(page: ft.Page) -> None:
             # Hack: Wrap View controls in a Column to embed in Layout
             # This might Result in double AppBars if the View had one.
             real_content = ft.Column(
-                 # Expand logic might be lost, ensuring expand=True
+                # Expand logic might be lost, ensuring expand=True
                 controls=content.controls,
-                expand=True
+                expand=True,
             )
         else:
             real_content = content
-            
+
         layout = MainLayout(
             page=page,
             app_state=state,
@@ -165,9 +161,9 @@ def main(page: ft.Page) -> None:
             on_logout=handle_logout,
             on_nav=handle_nav,
             toggle_theme=toggle_theme,
-            current_route=route
+            current_route=route,
         )
-        
+
         # Return a fresh View wrapping the Layout
         return ft.View(route, [layout], padding=0)
 
@@ -226,7 +222,7 @@ def main(page: ft.Page) -> None:
     def content_list_builder(_: ft.Page) -> ft.View:
         content = ContentListContent(page, ctx, state)
         return make_view("/admin/content", content)
-        
+
     def content_edit_builder(_: ft.Page, **kwargs: Any) -> ft.View:
         item_id = kwargs.get("item_id")
         content = ContentEditContent(page, ctx, state, item_id=item_id)
@@ -236,22 +232,23 @@ def main(page: ft.Page) -> None:
     from src.app_shell.admin.assets_admin import AssetListView
     from src.app_shell.admin.schedule_admin import ScheduleView
     from src.app_shell.admin.users_admin import UserEditView, UserListView
-    
+
     def asset_list_builder(_: ft.Page) -> ft.View:
         return make_view("/admin/assets", AssetListView(page, ctx, state))
-        
+
     def schedule_builder(_: ft.Page) -> ft.View:
         return make_view("/admin/schedule", ScheduleView(page, ctx, state))
-        
+
     def user_list_builder(_: ft.Page) -> ft.View:
-         return make_view("/admin/users", UserListView(page, ctx, state))
-         
+        return make_view("/admin/users", UserListView(page, ctx, state))
+
     def user_edit_builder(_: ft.Page, **kwargs: Any) -> ft.View:
         uid = cast(str, kwargs.get("user_id"))
         return make_view(f"/admin/users/{uid}", UserEditView(page, ctx, state, user_id=uid))
-        
+
     # Invite is public
     from src.app_shell.invite_routes import RedeemInviteView
+
     def invite_builder(_: ft.Page, **kwargs: Any) -> ft.View:
         token = kwargs.get("token", "")
         # RedeemInviteView is likely a View.
@@ -281,28 +278,24 @@ def main(page: ft.Page) -> None:
 
     # Invite redemption
     router.register_dynamic(r"^/invite/(?P<token>.+)$", invite_builder, protected=False)
-    
-    # Protected 
+
+    # Protected
     router.register("/dashboard", dashboard_builder, protected=True)
     router.register("/admin/content", content_list_builder, protected=True)
-    router.register("/admin/content/new", 
-        lambda p: make_view(
-            "/admin/content/new", 
-            ContentEditContent(p, ctx, state, item_id="new")
-        ), 
-        protected=True
+    router.register(
+        "/admin/content/new",
+        lambda p: make_view("/admin/content/new", ContentEditContent(p, ctx, state, item_id="new")),
+        protected=True,
     )
     router.register_dynamic(
-        r"^/admin/content/(?P<item_id>.+)$", 
-        content_edit_builder, 
-        protected=True
+        r"^/admin/content/(?P<item_id>.+)$", content_edit_builder, protected=True
     )
-    
+
     router.register("/admin/assets", asset_list_builder, protected=True)
     router.register("/admin/schedule", schedule_builder, protected=True)
     router.register("/admin/users", user_list_builder, protected=True)
     router.register_dynamic(r"^/admin/users/(?P<user_id>.+)$", user_edit_builder, protected=True)
-    
+
     # Wire up events
     page.on_route_change = router.handle_route_change
     page.on_view_pop = router.view_pop
@@ -310,6 +303,6 @@ def main(page: ft.Page) -> None:
     # Go to initial route (default to "/" if route is empty)
     page.go(page.route or "/")
 
+
 if __name__ == "__main__":
     ft.app(target=main)
-

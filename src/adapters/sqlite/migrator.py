@@ -39,7 +39,7 @@ class SQLiteMigrator:
                 if filename not in applied:
                     print(f"Applying migration: {filename}")
                     self._apply_migration(conn, filename)
-            
+
             print("All migrations applied.")
 
         finally:
@@ -49,7 +49,7 @@ class SQLiteMigrator:
         path = os.path.join(self.migrations_dir, filename)
         with open(path) as f:
             content = f.read()
-        
+
         # Split by '-- Down' effectively taking the first part
         # Or look for '-- Up'?
         # Simple convention: File starts with Up.

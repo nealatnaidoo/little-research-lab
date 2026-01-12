@@ -20,19 +20,17 @@ def get_file_hash(path: Path) -> str:
     except Exception:
         return "error"
 
+
 def generate_manifest(root: Path = SRC_ROOT) -> dict[str, Any]:
-    manifest: dict[str, Any] = {
-        "timestamp": datetime.now().isoformat(),
-        "modules": {}
-    }
-    
+    manifest: dict[str, Any] = {"timestamp": datetime.now().isoformat(), "modules": {}}
+
     if not root.exists():
         return manifest
 
     for entry in root.iterdir():
         if entry.name in IGNORE_DIRS:
             continue
-            
+
         if entry.is_dir():
             files = []
             for r, _, fs in os.walk(entry):
@@ -41,15 +39,18 @@ def generate_manifest(root: Path = SRC_ROOT) -> dict[str, Any]:
                         continue
                     file_path = Path(r) / f
                     rel_path = file_path.relative_to(root)
-                    files.append({
-                        "path": str(rel_path),
-                        "size": file_path.stat().st_size,
-                        "hash": get_file_hash(file_path)
-                    })
+                    files.append(
+                        {
+                            "path": str(rel_path),
+                            "size": file_path.stat().st_size,
+                            "hash": get_file_hash(file_path),
+                        }
+                    )
             files.sort(key=lambda x: str(x["path"]))
             manifest["modules"][entry.name] = files
-            
+
     return manifest
+
 
 if __name__ == "__main__":
     print(json.dumps(generate_manifest(), indent=2))

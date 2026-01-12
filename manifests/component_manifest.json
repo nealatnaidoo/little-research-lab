@@ -1,0 +1,224 @@
+{
+  "schema_version": "1.0",
+  "project_slug": "little-research-lab-v3",
+  "generated_at": "2026-01-12T07:45:00Z",
+  "components": [
+    {
+      "id": "C0",
+      "name": "RulesComponent",
+      "path": "src/components/rules/",
+      "contract": "src/components/rules/contract.md",
+      "status": "implemented",
+      "spec_refs": ["E0", "HV1", "HV2"],
+      "ports": ["FileSystemPort", "EnvironmentPort"],
+      "tasks": ["T-0002"]
+    },
+    {
+      "id": "C1",
+      "name": "ContentComponent",
+      "path": "src/components/content/",
+      "contract": "src/components/content/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/content.py",
+      "spec_refs": ["E2", "E3", "E4", "SM1"],
+      "ports": ["ContentRepoPort", "RulesPort", "TimePort"],
+      "tasks": ["T-0018", "T-0019", "T-0023"]
+    },
+    {
+      "id": "C2",
+      "name": "RenderComponent",
+      "path": "src/components/render/",
+      "contract": "src/components/render/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/render.py",
+      "spec_refs": ["E1.2", "E4.4"],
+      "ports": ["SettingsPort", "RulesPort"],
+      "tasks": ["T-0011", "T-0026"]
+    },
+    {
+      "id": "C3",
+      "name": "AssetsComponent",
+      "path": "src/components/assets/",
+      "contract": "src/components/assets/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/assets.py",
+      "spec_refs": ["E2.1", "E2.2", "E2.3"],
+      "ports": ["AssetRepoPort", "VersionRepoPort", "StoragePort", "RulesPort"],
+      "tasks": ["T-0014", "T-0016", "T-0017"]
+    },
+    {
+      "id": "C4",
+      "name": "SchedulerComponent",
+      "path": "src/components/scheduler/",
+      "contract": "src/components/scheduler/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/scheduler.py",
+      "spec_refs": ["E5", "SM2"],
+      "ports": ["PublishJobRepoPort", "ContentPort", "TimePort", "RulesPort"],
+      "tasks": ["T-0028", "T-0029", "T-0030"]
+    },
+    {
+      "id": "C5",
+      "name": "SettingsComponent",
+      "path": "src/components/settings/",
+      "contract": "src/components/settings/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/settings.py",
+      "spec_refs": ["E1.1"],
+      "ports": ["SettingsRepoPort", "CacheInvalidatorPort"],
+      "tasks": ["T-0009", "T-0010"]
+    },
+    {
+      "id": "C6",
+      "name": "RedirectsComponent",
+      "path": "src/components/redirects/",
+      "contract": "src/components/redirects/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/redirects.py",
+      "spec_refs": ["E7"],
+      "ports": ["RedirectRepoPort", "RulesPort"],
+      "tasks": ["T-0039", "T-0040", "T-0041"]
+    },
+    {
+      "id": "C7",
+      "name": "AnalyticsComponent",
+      "path": "src/components/analytics/",
+      "contract": "src/components/analytics/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/analytics_*.py",
+      "spec_refs": ["E6"],
+      "ports": ["AnalyticsRepoPort", "DedupePort", "RulesPort"],
+      "tasks": ["T-0032", "T-0033", "T-0034", "T-0035", "T-0036"]
+    },
+    {
+      "id": "C8",
+      "name": "AuditComponent",
+      "path": "src/components/audit/",
+      "contract": "src/components/audit/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/audit.py",
+      "spec_refs": ["E8"],
+      "ports": ["AuditRepoPort", "TimePort"],
+      "tasks": ["T-0043", "T-0044", "T-0045"]
+    },
+    {
+      "id": "C9",
+      "name": "AuthComponent",
+      "path": "src/components/auth/",
+      "contract": "src/components/auth/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/services/auth.py",
+      "spec_refs": ["AUTH"],
+      "ports": ["UserRepoPort", "AuthAdapterPort", "PolicyPort", "SessionStorePort"],
+      "tasks": []
+    },
+    {
+      "id": "C10",
+      "name": "CollabComponent",
+      "path": "src/components/collab/",
+      "contract": "src/components/collab/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/services/collab.py",
+      "spec_refs": ["COLLAB"],
+      "ports": ["CollabRepoPort", "ContentRepoPort", "UserRepoPort", "PolicyPort"],
+      "tasks": []
+    },
+    {
+      "id": "C11",
+      "name": "InviteComponent",
+      "path": "src/components/invite/",
+      "contract": "src/components/invite/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/services/invite.py",
+      "spec_refs": ["INVITE"],
+      "ports": ["InviteRepoPort", "UserRepoPort", "AuthAdapterPort", "PolicyPort"],
+      "tasks": []
+    },
+    {
+      "id": "C12",
+      "name": "PublishComponent",
+      "path": "src/components/publish/",
+      "contract": "src/components/publish/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/services/publish.py",
+      "spec_refs": ["PUBLISH"],
+      "ports": ["ContentRepoPort", "UserRepoPort", "PolicyPort", "ClockPort"],
+      "tasks": []
+    },
+    {
+      "id": "C13",
+      "name": "BootstrapComponent",
+      "path": "src/components/bootstrap/",
+      "contract": "src/components/bootstrap/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/services/bootstrap.py",
+      "spec_refs": ["BOOTSTRAP"],
+      "ports": ["UserRepoPort", "AuthAdapterPort", "RulesPort"],
+      "tasks": []
+    }
+  ],
+  "sub_components": [
+    {
+      "id": "C1-sub",
+      "name": "RichTextComponent",
+      "path": "src/components/richtext/",
+      "contract": "src/components/richtext/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/richtext.py",
+      "parent": "C1"
+    },
+    {
+      "id": "C2-sub",
+      "name": "RenderPostsComponent",
+      "path": "src/components/render_posts/",
+      "contract": "src/components/render_posts/contract.md",
+      "status": "implemented",
+      "legacy_path": "src/core/services/render_posts.py",
+      "parent": "C2"
+    }
+  ],
+  "ports": [
+    {
+      "id": "P1",
+      "name": "DBPort",
+      "path": "src/core/ports/db.py",
+      "adapters": ["src/adapters/sqlite_db.py"],
+      "status": "implemented",
+      "tasks": ["T-0005"]
+    },
+    {
+      "id": "P2",
+      "name": "StoragePort",
+      "path": "src/core/ports/storage.py",
+      "adapters": ["src/adapters/local_storage.py"],
+      "status": "implemented",
+      "tasks": ["T-0006"]
+    },
+    {
+      "id": "P3",
+      "name": "TimePort",
+      "path": "src/core/ports/time.py",
+      "adapters": ["src/adapters/time_london.py"],
+      "status": "implemented",
+      "tasks": ["T-0007"]
+    },
+    {
+      "id": "P4",
+      "name": "JobRunnerPort",
+      "path": "src/core/ports/jobs.py",
+      "adapters": ["src/adapters/dev_jobs.py"],
+      "status": "implemented",
+      "tasks": ["T-0008"]
+    }
+  ],
+  "shell": {
+    "http": {
+      "path": "src/shell/http/",
+      "status": "implemented"
+    },
+    "ui": {
+      "path": "src/shell/ui/",
+      "status": "planned"
+    }
+  }
+}

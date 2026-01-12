@@ -12,24 +12,24 @@ from src.domain.entities import User
 
 
 def seed():
-    data_dir = os.environ.get('LAB_DATA_DIR', './data')
+    data_dir = os.environ.get("LAB_DATA_DIR", "./data")
     os.makedirs(data_dir, exist_ok=True)
-    
+
     db_path = f"{data_dir}/lrl.db"
     print(f"Seeding to {db_path}")
-    
+
     # Initialize DB (create tables if needed) - The repos assume tables exist?
     # Usually migrations create tables.
     # For this pure-python-sqlite repo, we might need DDL.
     # Let's assume schema.sql exists or we need to run it.
-    # T-0047/Basic: Did we create schema? 
+    # T-0047/Basic: Did we create schema?
     # I recall I only wrote Repos, assuming tables exist.
     # The `SQLiteContentRepo` doesn't create tables.
     # I might need to initialize the DB schema first!
-    
+
     conn = SQLiteUserRepo(db_path)._get_conn()
     cursor = conn.cursor()
-    
+
     # Simple DDL for MVP
     cursor.executescript("""
     CREATE TABLE IF NOT EXISTS users (
@@ -84,10 +84,9 @@ def seed():
     """)
     conn.commit()
 
-
     repo = SQLiteUserRepo(db_path)
     email = "admin@example.com"
-    
+
     existing = repo.get_by_email(email)
     if not existing:
         u = User(
@@ -98,12 +97,13 @@ def seed():
             roles=["admin"],
             status="active",
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         repo.save(u)
         print(f"Created user: {email} / changeme")
     else:
         print(f"User {email} already exists")
+
 
 if __name__ == "__main__":
     seed()

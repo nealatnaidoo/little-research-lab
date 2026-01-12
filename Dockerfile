@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY src/ src/
-COPY research-lab-bio_rules.yaml .
+COPY rules.yaml .
 COPY seed_db.py .
 COPY migrations/ migrations/
 

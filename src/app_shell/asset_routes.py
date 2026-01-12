@@ -38,10 +38,7 @@ class AssetHandler:
 
 
 def PublicAssetContent(
-    page: ft.Page,
-    ctx: ServiceContext,
-    state: AppState,
-    asset_id: str | None = None
+    page: ft.Page, ctx: ServiceContext, state: AppState, asset_id: str | None = None
 ) -> ft.Control:
     """
     Public asset view - serves assets that are public or attached to published content.
@@ -78,17 +75,12 @@ def PublicAssetContent(
     # Determine display based on mime type
     controls: list[ft.Control] = []
 
-    controls.append(ft.Container(
-        content=ft.TextButton("← Back", on_click=lambda _: page.go("/")),
-        padding=10
-    ))
+    controls.append(
+        ft.Container(content=ft.TextButton("← Back", on_click=lambda _: page.go("/")), padding=10)
+    )
 
     if asset.mime_type.startswith("image/"):
-        controls.append(ft.Image(
-            src_base64=b64_content,
-            fit=ft.ImageFit.CONTAIN,
-            width=800
-        ))
+        controls.append(ft.Image(src_base64=b64_content, fit=ft.ImageFit.CONTAIN, width=800))
     elif asset.mime_type == "application/pdf":
         # PDF preview not directly supported, show download info
         controls.append(ft.Text(f"PDF: {asset.filename_original}", size=18))
@@ -104,14 +96,12 @@ def PublicAssetContent(
         f"Filename: {asset.filename_original}", size=12, color="onSurfaceVariant"
     )
     controls.append(filename_text)
-    size_text = ft.Text(
-        f"Size: {asset.size_bytes:,} bytes", size=12, color="onSurfaceVariant"
-    )
+    size_text = ft.Text(f"Size: {asset.size_bytes:,} bytes", size=12, color="onSurfaceVariant")
     controls.append(size_text)
 
     return ft.Container(
         content=ft.Column(controls, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         padding=20,
         expand=True,
-        alignment=ft.alignment.center
+        alignment=ft.alignment.center,
     )

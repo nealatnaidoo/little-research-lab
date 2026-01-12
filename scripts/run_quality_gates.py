@@ -8,6 +8,7 @@ from typing import TypedDict
 
 # --- Types ---
 
+
 class GateResult(TypedDict):
     status: str  # "pass" | "fail"
     exit_code: int
@@ -15,10 +16,12 @@ class GateResult(TypedDict):
     stderr: str
     command: list[str]
 
+
 class GatesReport(TypedDict):
     timestamp_utc: str
     overall_status: str  # "pass" | "fail"
     gates: dict[str, GateResult]
+
 
 # --- Config ---
 
@@ -42,6 +45,7 @@ COMMANDS = {
 
 # --- Execution ---
 
+
 def run_command(name: str, cmd: list[str]) -> GateResult:
     print(f"[{name}] Running: {' '.join(cmd)} ...", end="", flush=True)
     try:
@@ -50,7 +54,7 @@ def run_command(name: str, cmd: list[str]) -> GateResult:
             cmd,
             capture_output=True,
             text=True,
-            check=False  # We want to capture failure, not raise exception
+            check=False,  # We want to capture failure, not raise exception
         )
         status = "pass" if result.returncode == 0 else "fail"
         print(f" {status.upper()}")
@@ -59,38 +63,33 @@ def run_command(name: str, cmd: list[str]) -> GateResult:
             "exit_code": result.returncode,
             "stdout": result.stdout,
             "stderr": result.stderr,
-            "command": cmd
+            "command": cmd,
         }
     except Exception as e:
         print(" ERROR (Exception)")
-        return {
-            "status": "fail",
-            "exit_code": -1,
-            "stdout": "",
-            "stderr": str(e),
-            "command": cmd
-        }
+        return {"status": "fail", "exit_code": -1, "stdout": "", "stderr": str(e), "command": cmd}
+
 
 def main() -> None:
     print("=== Little Research Lab: Quality Gates Runner ===")
-    
+
     results: dict[str, GateResult] = {}
     overall_pass = True
-    
+
     # Run all gates
     for name, cmd in COMMANDS.items():
         res = run_command(name, cmd)
         results[name] = res
         if res["status"] != "pass":
             overall_pass = False
-    
+
     # Construct Report
     report: GatesReport = {
         "timestamp_utc": datetime.datetime.now(datetime.UTC).isoformat(),
         "overall_status": "pass" if overall_pass else "fail",
-        "gates": results
+        "gates": results,
     }
-    
+
     # Write Artifact
     report_path = ARTIFACTS_DIR / "quality_gates_run.json"
     try:
@@ -100,7 +99,7 @@ def main() -> None:
     except Exception as e:
         print(f"\nFAILED to write report artifact: {e}")
         sys.exit(2)
-        
+
     # Exit with code
     if overall_pass:
         print("\nSUCCESS: All quality gates passed.")
@@ -118,6 +117,7 @@ def main() -> None:
                     print("STDERR:")
                     print(res["stderr"])
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

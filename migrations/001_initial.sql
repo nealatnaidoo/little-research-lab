@@ -126,7 +126,28 @@ CREATE TABLE IF NOT EXISTS site_settings (
     FOREIGN KEY(avatar_asset_id) REFERENCES assets(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS publish_jobs (
+    id TEXT PRIMARY KEY,
+    content_id TEXT NOT NULL,
+    publish_at_utc DATETIME NOT NULL,
+    status TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_attempt_at DATETIME,
+    next_retry_at DATETIME,
+    completed_at DATETIME,
+    actual_publish_at DATETIME,
+    error_message TEXT,
+    claimed_by TEXT,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    FOREIGN KEY(content_id) REFERENCES content_items(id) ON DELETE CASCADE
+);
+
 -- Down
+DROP TABLE publish_jobs;
+DROP TABLE site_settings;
+DROP TABLE collaboration_grants;
+DROP TABLE invites;
 DROP TABLE audit_events;
 DROP TABLE link_groups;
 DROP TABLE link_items;

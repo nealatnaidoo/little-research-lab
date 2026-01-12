@@ -1,4 +1,5 @@
 """Integration tests for users API routes."""
+
 import os
 import sqlite3
 from datetime import datetime
@@ -30,7 +31,7 @@ def override_settings(test_db_path, tmp_path):
         s.db_path = test_db_path
         s.assets_dir = tmp_path / "assets"
         s.assets_dir.mkdir(exist_ok=True)
-        s.rules_path = Path(os.getcwd()) / "research-lab-bio_rules.yaml"
+        s.rules_path = Path(os.getcwd()) / "rules.yaml"
         return s
 
     app.dependency_overrides[get_settings] = _settings
@@ -196,7 +197,7 @@ def test_update_user_not_found(authenticated_admin):
         f"/api/users/{fake_id}",
         json={"roles": ["viewer"]},
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 404
     assert "not found" in resp.json()["detail"].lower()
 
 

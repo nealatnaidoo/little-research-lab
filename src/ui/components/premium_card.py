@@ -3,10 +3,11 @@ from typing import Any
 import flet as ft
 
 
-class PremiumCard(ft.Container): # type: ignore
+class PremiumCard(ft.Container):  # type: ignore
     """
     A unified Card component with hover effects and consistent styling.
     """
+
     def __init__(
         self,
         content: ft.Control,
@@ -22,7 +23,7 @@ class PremiumCard(ft.Container): # type: ignore
             height=height,
             padding=padding,
             border_radius=ft.border_radius.all(12),
-            bgcolor="surfaceVariant", # Adapts to theme
+            bgcolor="surfaceVariant",  # Adapts to theme
             animate=ft.Animation(200, ft.AnimationCurve.EASE_OUT),
             on_hover=self._on_hover,
             on_click=on_click,
@@ -32,7 +33,7 @@ class PremiumCard(ft.Container): # type: ignore
                 blur_radius=10,
                 color="#1A000000",
                 offset=ft.Offset(0, 4),
-            )
+            ),
         )
         self.original_scale = 1.0
         self.scale = 1.0

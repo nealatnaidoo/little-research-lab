@@ -17,6 +17,7 @@ def test_app_theme_modes():
     assert dark.color_scheme.primary == AppTheme.primary_dark
     # assert dark.color_scheme.brightness == ft.Brightness.DARK
 
+
 def test_app_state_logout():
     """Test AppState logout clears user."""
     state = AppState()
@@ -29,10 +30,10 @@ def test_app_state_logout():
         roles=[],
         status="active",
         created_at=datetime.now(),
-        updated_at=datetime.now()
+        updated_at=datetime.now(),
     )
     state.current_user = user
     assert state.current_user is not None
-    
+
     state.logout()
     assert state.current_user is None

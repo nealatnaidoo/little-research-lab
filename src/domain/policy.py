@@ -10,31 +10,31 @@ class PolicyEngine:
         self.rules = rules
 
     def check_permission(
-        self, 
-        user: User | None, 
-        user_roles: Sequence[str], 
-        action: str, 
+        self,
+        user: User | None,
+        user_roles: Sequence[str],
+        action: str,
         resource: Any = None,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """
         Check if the user/role is allowed to perform the action on the resource.
-        
+
         Order of precedence:
         1. Public Permissions (Global)
         2. Role-Based Access Control (RBAC)
         3. Attribute-Based Access Control (ABAC)
         """
         context = context or {}
-        
+
         # 1. Public Permissions
         if action in self.rules.rbac.public_permissions:
             return True
-            
+
         # If not public, we need a user
         if not user:
             return False
-            
+
         # 2. RBAC
         # Check if any of the user's roles allow this action
         for role in user_roles:
@@ -43,13 +43,13 @@ class PolicyEngine:
                 return True
             if action in allowed_actions:
                 return True
-            
+
             # Check for scoped wildcards (e.g. "content:*" matches "content:edit")
             if ":" in action:
                 scope = action.split(":")[0]
                 if f"{scope}:*" in allowed_actions:
                     return True
-                
+
         # 3. ABAC
         # Only relevant if we have a resource to check against
         if resource:
@@ -64,16 +64,16 @@ class PolicyEngine:
                 if self._evaluate_rule(rule.if_condition, user, user_roles, resource, context):
                     if action in rule.allow:
                         return True
-                        
+
         return False
 
     def _evaluate_rule(
-        self, 
-        condition: dict[str, Any], 
-        user: User, 
+        self,
+        condition: dict[str, Any],
+        user: User,
         user_roles: Sequence[str],
         resource: Any,
-        context: dict[str, Any]
+        context: dict[str, Any],
     ) -> bool:
         """
         Evaluate condition predicates from rules.yaml.
@@ -87,7 +87,7 @@ class PolicyEngine:
                 # Check if intersection of user_roles and allowed roles is not empty
                 if not set(user_roles).intersection(set(args)):
                     return False
-            
+
             elif predicate == "owns_content":
                 must_own = args
                 if must_own:
@@ -96,7 +96,7 @@ class PolicyEngine:
                         return False
                     if str(resource.owner_user_id) != str(user.id):
                         return False
-            
+
             elif predicate == "collaborator_scope_in":
                 required_scopes = set(args)
                 grants = context.get("grants", [])
@@ -106,7 +106,7 @@ class PolicyEngine:
                 has_grant = any(g.scope in required_scopes for g in grants)
                 if not has_grant:
                     return False
-            
+
         return True
 
     def can_manage_users(self, user: User) -> bool:

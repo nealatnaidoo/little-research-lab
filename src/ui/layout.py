@@ -1,4 +1,3 @@
-
 from collections.abc import Callable
 from typing import Any
 
@@ -7,17 +6,18 @@ import flet as ft
 from src.ui.state import AppState
 
 
-class MainLayout(ft.Row): # type: ignore
+class MainLayout(ft.Row):  # type: ignore
     """
     The main responsive layout structure.
     - Desktop: NavigationRail (Left) + Content (Right)
     - Mobile: AppBar with Drawer + Content
     """
+
     def __init__(
         self,
         page: ft.Page,
         app_state: AppState,
-        content: ft.Control, # The dynamic view
+        content: ft.Control,  # The dynamic view
         on_logout: Callable[[], None],
         on_nav: Callable[[str], None],
         toggle_theme: Callable[[], None],
@@ -29,10 +29,10 @@ class MainLayout(ft.Row): # type: ignore
         self.on_logout = on_logout
         self.on_nav = on_nav
         self.toggle_theme = toggle_theme
-        
+
         # Determine if we act as admin layout
         is_admin = self.app_state.current_user is not None
-        
+
         # Determine selection
         # Simple heuristic mapping
         idx = None
@@ -42,7 +42,7 @@ class MainLayout(ft.Row): # type: ignore
             idx = 1
         elif current_route == "/login" and not is_admin:
             idx = 1
-            
+
         # Navigation Rail (Desktop)
         self.rail = ft.NavigationRail(
             selected_index=idx,
@@ -61,25 +61,24 @@ class MainLayout(ft.Row): # type: ignore
                     label="Home",
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.DASHBOARD_OUTLINED, 
-                    selected_icon=ft.Icons.DASHBOARD, 
-                    label="Dashboard"
+                    icon=ft.Icons.DASHBOARD_OUTLINED,
+                    selected_icon=ft.Icons.DASHBOARD,
+                    label="Dashboard",
                 ),
-            ] if is_admin else [
-                 ft.NavigationRailDestination(
+            ]
+            if is_admin
+            else [
+                ft.NavigationRailDestination(
                     icon=ft.Icons.HOME_OUTLINED,
                     selected_icon=ft.Icons.HOME,
                     label="Home",
                 ),
-                ft.NavigationRailDestination(
-                    icon=ft.Icons.LOGIN, 
-                    label="Login"
-                ),
+                ft.NavigationRailDestination(icon=ft.Icons.LOGIN, label="Login"),
             ],
             on_change=self._rail_change,
             bgcolor="surface",
         )
-        
+
         # Content Wrapper
         self.content_area = ft.Container(
             content=content,
@@ -87,39 +86,31 @@ class MainLayout(ft.Row): # type: ignore
             padding=20,
             alignment=ft.alignment.top_left,  # top_left equivalent
         )
-        
+
         # AppBar (Floating action for Theme/User)
         theme_icon = (
-            ft.Icons.DARK_MODE
-            if page.theme_mode == ft.ThemeMode.LIGHT
-            else ft.Icons.LIGHT_MODE
+            ft.Icons.DARK_MODE if page.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.LIGHT_MODE
         )
         self.app_bar = ft.Container(
             content=ft.Row(
                 [
                     ft.Text(
-                        "Little Research Lab",
-                        size=20,
-                        weight=ft.FontWeight.BOLD,
-                        color="primary"
+                        "Little Research Lab", size=20, weight=ft.FontWeight.BOLD, color="primary"
                     ),
                     ft.Container(expand=True),
-                    ft.IconButton(
-                        theme_icon,
-                        on_click=lambda _: self.toggle_theme()
-                    ),
+                    ft.IconButton(theme_icon, on_click=lambda _: self.toggle_theme()),
                     ft.PopupMenuButton(
                         icon=ft.Icons.PERSON,
                         items=[
                             ft.PopupMenuItem(text="Logout", on_click=lambda _: self.on_logout())
-                        ]
-                    ) if is_admin else ft.FilledButton(
-                        "Login", 
-                        icon=ft.Icons.LOGIN,
-                        on_click=lambda _: self.on_nav("/login")
+                        ],
+                    )
+                    if is_admin
+                    else ft.FilledButton(
+                        "Login", icon=ft.Icons.LOGIN, on_click=lambda _: self.on_nav("/login")
                     ),
                 ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             padding=ft.padding.symmetric(horizontal=20, vertical=10),
             bgcolor="surfaceVariant",
@@ -128,27 +119,20 @@ class MainLayout(ft.Row): # type: ignore
         # Layout Assembly
         # We start with Rail + Content.
         # Ideally we wrap content in a Column to put AppBar on top
-        
-        right_panel = ft.Column(
-            [
-                self.app_bar,
-                self.content_area
-            ],
-            expand=True,
-            spacing=0
-        )
-        
+
+        right_panel = ft.Column([self.app_bar, self.content_area], expand=True, spacing=0)
+
         self.controls = [
             self.rail,
             ft.VerticalDivider(width=1, color="outlineVariant"),
-            right_panel
+            right_panel,
         ]
 
     def _rail_change(self, e: Any) -> None:
         idx = e.control.selected_index
         # Hardcoded route map for now - improvement: pass routes
         is_admin = self.app_state.current_user is not None
-        
+
         if is_admin:
             if idx == 0:
                 self.on_nav("/")

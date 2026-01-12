@@ -11,14 +11,17 @@ from src.domain.entities import LinkItem
 def db_path(tmp_path):
     return str(tmp_path / "test_links.db")
 
+
 @pytest.fixture
 def migrator(db_path):
     return SQLiteMigrator(db_path, "migrations")
+
 
 @pytest.fixture
 def repo(db_path, migrator):
     migrator.run_migrations()
     return SQLiteLinkRepo(db_path)
+
 
 def test_save_and_list_links(repo):
     link = LinkItem(
@@ -29,15 +32,16 @@ def test_save_and_list_links(repo):
         icon="icon",
         status="active",
         position=0,
-        visibility="public"
+        visibility="public",
     )
-    
+
     saved = repo.save(link)
     assert saved == link
-    
+
     all_links = repo.get_all()
     assert len(all_links) == 1
     assert all_links[0].title == "Google"
+
 
 def test_delete_link(repo):
     link = LinkItem(
@@ -48,10 +52,10 @@ def test_delete_link(repo):
         icon="icon",
         status="active",
         position=1,
-        visibility="private"
+        visibility="private",
     )
     repo.save(link)
     assert len(repo.get_all()) == 1
-    
+
     repo.delete(link.id)
     assert len(repo.get_all()) == 0

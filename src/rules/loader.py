@@ -17,7 +17,7 @@ def load_rules(path: Path) -> Rules:
 
     with open(path) as f:
         content = f.read()
-    
+
     # Robustly strip markdown code fences
     # Look for ```yaml starting block
     lines = content.splitlines()
@@ -34,10 +34,10 @@ def load_rules(path: Path) -> Rules:
         if in_block and s_line.startswith("```"):
             in_block = False
             break
-        
+
         if in_block:
             yaml_lines.append(line)
-    
+
     # If we found a block, use it. Otherwise assume the whole file is YAML
     # (or let yaml.safe_load fail if it's mixed content)
     if found_block:

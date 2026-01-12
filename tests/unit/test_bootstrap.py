@@ -1,54 +1,130 @@
-
-from unittest.mock import MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import pytest
 
-from src.services.bootstrap import bootstrap_system
+from src.components.bootstrap.component import run
+from src.components.bootstrap.models import BootstrapInput
+
+
+class FakeTime:
+    def now_utc(self):
+        return datetime(2026, 1, 12, 12, 0, 0, tzinfo=UTC)
+
+
+class FakeRules:
+    def __init__(self, enabled: bool = True):
+        self._enabled = enabled
+
+    def get_bootstrap_config(self):
+        mock_config = MagicMock()
+        mock_config.enabled_if_no_users = self._enabled
+        return mock_config
 
 
 @pytest.fixture
-def mock_ctx():
-    ctx = MagicMock()
-    ctx.rules.ops.bootstrap_admin.enabled_if_no_users = True
-    ctx.auth_service.user_repo.list_all.return_value = [] # Empty DB
-    return ctx
+def mock_user_repo():
+    repo = MagicMock()
+    repo.list_all.return_value = []  # Empty DB
+    return repo
 
-@patch.dict('os.environ', {
-    'LRL_BOOTSTRAP_EMAIL': 'newcap@example.com',
-    'LRL_BOOTSTRAP_PASSWORD': 'secure'
-})
-def test_bootstrap_success(mock_ctx):
-    """Should create user if DB is empty and env vars set."""
-    mock_ctx.auth_service.auth_adapter.hash_password.return_value = "hashed"
-    
-    bootstrap_system(mock_ctx)
-    
+
+@pytest.fixture
+def mock_auth_adapter():
+    adapter = MagicMock()
+    adapter.hash_password.return_value = "hashed_password"
+    return adapter
+
+
+def test_bootstrap_success(mock_user_repo, mock_auth_adapter):
+    """Should create user if DB is empty and credentials provided."""
+    inp = BootstrapInput(
+        bootstrap_email="newcap@example.com",
+        bootstrap_password="secure",
+    )
+
+    result = run(
+        inp,
+        user_repo=mock_user_repo,
+        auth_adapter=mock_auth_adapter,
+        rules=FakeRules(enabled=True),
+        time=FakeTime(),
+    )
+
+    assert result.success is True
+    assert result.created is True
+    assert result.user is not None
+    assert result.user.email == "newcap@example.com"
+    assert "owner" in result.user.roles
+
     # Verify save called
-    mock_ctx.auth_service.user_repo.save.assert_called_once()
-    user = mock_ctx.auth_service.user_repo.save.call_args[0][0]
-    assert user.email == "newcap@example.com"
-    assert "owner" in user.roles
+    mock_user_repo.save.assert_called_once()
 
-@patch.dict('os.environ', {}, clear=True)
-def test_bootstrap_no_env_vars(mock_ctx):
+
+def test_bootstrap_no_credentials():
     """Should skip if credentials missing."""
-    bootstrap_system(mock_ctx)
-    mock_ctx.auth_service.user_repo.save.assert_not_called()
+    mock_repo = MagicMock()
+    mock_repo.list_all.return_value = []
 
-def test_bootstrap_already_populated(mock_ctx):
+    inp = BootstrapInput(
+        bootstrap_email=None,
+        bootstrap_password=None,
+    )
+
+    result = run(
+        inp,
+        user_repo=mock_repo,
+        auth_adapter=MagicMock(),
+        rules=FakeRules(enabled=True),
+        time=FakeTime(),
+    )
+
+    assert result.success is True
+    assert result.created is False
+    assert result.skipped_reason is not None
+    mock_repo.save.assert_not_called()
+
+
+def test_bootstrap_already_populated(mock_auth_adapter):
     """Should skip if users exist."""
-    mock_ctx.auth_service.user_repo.list_all.return_value = ["User1"]
-    
-    with patch.dict('os.environ', {'LRL_BOOTSTRAP_EMAIL': 'x', 'LRL_BOOTSTRAP_PASSWORD': 'y'}):
-        bootstrap_system(mock_ctx)
-        
-    mock_ctx.auth_service.user_repo.save.assert_not_called()
+    mock_repo = MagicMock()
+    mock_repo.list_all.return_value = [MagicMock()]  # Has users
 
-def test_bootstrap_disabled(mock_ctx):
+    inp = BootstrapInput(
+        bootstrap_email="newcap@example.com",
+        bootstrap_password="secure",
+    )
+
+    result = run(
+        inp,
+        user_repo=mock_repo,
+        auth_adapter=mock_auth_adapter,
+        rules=FakeRules(enabled=True),
+        time=FakeTime(),
+    )
+
+    assert result.success is True
+    assert result.created is False
+    assert "already exist" in result.skipped_reason
+    mock_repo.save.assert_not_called()
+
+
+def test_bootstrap_disabled(mock_user_repo, mock_auth_adapter):
     """Should skip if feature disabled in rules."""
-    mock_ctx.rules.ops.bootstrap_admin.enabled_if_no_users = False
-    
-    with patch.dict('os.environ', {'LRL_BOOTSTRAP_EMAIL': 'x', 'LRL_BOOTSTRAP_PASSWORD': 'y'}):
-        bootstrap_system(mock_ctx)
-        
-    mock_ctx.auth_service.user_repo.save.assert_not_called()
+    inp = BootstrapInput(
+        bootstrap_email="newcap@example.com",
+        bootstrap_password="secure",
+    )
+
+    result = run(
+        inp,
+        user_repo=mock_user_repo,
+        auth_adapter=mock_auth_adapter,
+        rules=FakeRules(enabled=False),
+        time=FakeTime(),
+    )
+
+    assert result.success is True
+    assert result.created is False
+    assert "not enabled" in result.skipped_reason
+    mock_user_repo.save.assert_not_called()

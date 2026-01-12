@@ -1,4 +1,5 @@
 """Integration tests for content API routes."""
+
 import os
 import sqlite3
 from datetime import datetime
@@ -30,7 +31,7 @@ def override_settings(test_db_path, tmp_path):
         s.db_path = test_db_path
         s.assets_dir = tmp_path / "assets"
         s.assets_dir.mkdir(exist_ok=True)
-        s.rules_path = Path(os.getcwd()) / "research-lab-bio_rules.yaml"
+        s.rules_path = Path(os.getcwd()) / "rules.yaml"
         return s
 
     app.dependency_overrides[get_settings] = _settings
@@ -181,9 +182,7 @@ def test_create_content(authenticated_admin):
             "summary": "A test post",
             "status": "draft",
             "visibility": "public",
-            "blocks": [
-                {"block_type": "markdown", "data_json": {"text": "Hello"}, "position": 0}
-            ],
+            "blocks": [{"block_type": "markdown", "data_json": {"text": "Hello"}, "position": 0}],
         },
     )
     assert resp.status_code == 200
@@ -259,12 +258,40 @@ def test_update_content(authenticated_admin, setup_db):
 
     resp = authenticated_admin.put(
         f"/api/content/{item_id}",
-        json={"title": "Updated Title", "status": "published"},
+        json={"title": "Updated Title", "status": "published"},  # Status should be ignored
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["title"] == "Updated Title"
+    assert data["status"] == "draft"  # Verify status did NOT change via update
+
+
+def test_transition_content(authenticated_admin, setup_db):
+    repo = SQLiteContentRepo(setup_db)
+    item_id = uuid4()
+    item = ContentItem(
+        id=item_id,
+        type="post",
+        slug="trans-test",
+        title="To Publish",
+        summary="",
+        status="draft",
+        visibility="public",
+        owner_user_id=uuid4(),
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
+    repo.save(item)
+
+    # Transition to published
+    resp = authenticated_admin.post(
+        f"/api/content/{item_id}/transition",
+        json={"status": "published"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
     assert data["status"] == "published"
+    assert data["published_at"] is not None
 
 
 def test_delete_content(authenticated_admin, setup_db):

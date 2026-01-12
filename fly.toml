@@ -51,7 +51,7 @@ primary_region = "iad"
 # =============================================================================
 [env]
   LAB_DATA_DIR = "/data"
-  LAB_RULES_PATH = "/app/research-lab-bio_rules.yaml"
+  LAB_RULES_PATH = "/app/rules.yaml"
   PYTHONPATH = "/app"
 
 # =============================================================================

@@ -21,14 +21,14 @@ def _resolve_content_item(
     # First try as slug
     item = ctx.content_service.repo.get_by_slug(identifier, item_type)
     if item:
-        return item
+        return item  # type: ignore[no-any-return]
 
     # Fall back to UUID lookup
     try:
         uid = UUID(identifier)
         item = ctx.content_service.repo.get_by_id(uid)
         if item and item.type == item_type:
-            return item
+            return item  # type: ignore[no-any-return]
     except (ValueError, KeyError, TypeError):
         pass
 
@@ -40,90 +40,79 @@ def PublicPostContent(
     ctx: ServiceContext,
     state: AppState,
     item_id: str | None = None,
-    slug: str | None = None
+    slug: str | None = None,
 ) -> ft.Control:
     identifier = slug or item_id
     if not identifier:
         return ft.Text("Post identifier required", color="red")
 
     item = _resolve_content_item(ctx, identifier, "post")
-        
+
     if not item:
         return ft.Text("Post not found", size=20)
 
     # Permission Check
     is_public = item.status == "published"
     if not is_public:
-         return ft.Text("Content not found (Private)", size=20)
+        return ft.Text("Content not found (Private)", size=20)
 
     # Render Content
     controls: list[ft.Control] = []
-    
+
     # Back Button
-    controls.append(ft.Container(
-        content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")),
-        padding=10
-    ))
-    
+    controls.append(
+        ft.Container(
+            content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")), padding=10
+        )
+    )
+
     # Title
-    controls.append(ft.Text(
-        item.title, 
-        size=30, 
-        weight=ft.FontWeight.BOLD, 
-        color="primary"
-    ))
+    controls.append(ft.Text(item.title, size=30, weight=ft.FontWeight.BOLD, color="primary"))
     if item.published_at:
-        date_str = item.published_at.strftime('%Y-%m-%d')
-        controls.append(ft.Text(
-            f"Published: {date_str}", 
-            italic=True, 
-            color="onSurfaceVariant"
-        ))
+        date_str = item.published_at.strftime("%Y-%m-%d")
+        controls.append(ft.Text(f"Published: {date_str}", italic=True, color="onSurfaceVariant"))
     controls.append(ft.Divider())
-    
+
     # Blocks
     if item.blocks:
         for block in item.blocks:
             if block.block_type == "markdown":
-                controls.append(ft.Markdown(
-                    block.data_json.get("text", ""),
-                    selectable=True,
-                    extension_set=ft.MarkdownExtensionSet.GITHUB_WEB
-                ))
+                controls.append(
+                    ft.Markdown(
+                        block.data_json.get("text", ""),
+                        selectable=True,
+                        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                    )
+                )
             elif block.block_type == "image":
-                 url = block.data_json.get("url")
-                 caption = block.data_json.get("caption")
-                 if url:
+                url = block.data_json.get("url")
+                caption = block.data_json.get("caption")
+                if url:
                     img = ft.Image(src=url, width=600, height=400, fit=ft.ImageFit.CONTAIN)
                     controls.append(img)
-                 if caption:
-                     controls.append(ft.Text(caption, size=12, italic=True))
+                if caption:
+                    controls.append(ft.Text(caption, size=12, italic=True))
             elif block.block_type == "chart":
                 spec = block.data_json.get("spec")
                 if spec:
                     try:
                         png_bytes = ctx.renderer.render_chart(spec, 600, 400, 100)
-                        b64 = base64.b64encode(png_bytes).decode('utf-8')
+                        b64 = base64.b64encode(png_bytes).decode("utf-8")
                         img = ft.Image(src_base64=b64)
                         controls.append(img)
                     except Exception as e:
                         logger.error(f"Failed to render chart: {e}")
                         controls.append(ft.Text(f"[Chart Error: {e}]", color="red"))
-            
+
             controls.append(ft.Container(height=10))
 
     return ft.Container(
-        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO),
-        padding=20,
-        expand=True
+        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO), padding=20, expand=True
     )
 
 
 def PublicPageContent(
-    page: ft.Page,
-    ctx: ServiceContext,
-    state: AppState,
-    slug: str | None = None
+    page: ft.Page, ctx: ServiceContext, state: AppState, slug: str | None = None
 ) -> ft.Control:
     """Render a static page by slug (About, Now, Projects, etc.)."""
     if not slug:
@@ -142,29 +131,27 @@ def PublicPageContent(
     controls: list[ft.Control] = []
 
     # Back Button
-    controls.append(ft.Container(
-        content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")),
-        padding=10
-    ))
+    controls.append(
+        ft.Container(
+            content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")), padding=10
+        )
+    )
 
     # Title
-    controls.append(ft.Text(
-        item.title,
-        size=30,
-        weight=ft.FontWeight.BOLD,
-        color="primary"
-    ))
+    controls.append(ft.Text(item.title, size=30, weight=ft.FontWeight.BOLD, color="primary"))
     controls.append(ft.Divider())
 
     # Blocks
     if item.blocks:
         for block in item.blocks:
             if block.block_type == "markdown":
-                controls.append(ft.Markdown(
-                    block.data_json.get("text", ""),
-                    selectable=True,
-                    extension_set=ft.MarkdownExtensionSet.GITHUB_WEB
-                ))
+                controls.append(
+                    ft.Markdown(
+                        block.data_json.get("text", ""),
+                        selectable=True,
+                        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                    )
+                )
             elif block.block_type == "image":
                 url = block.data_json.get("url")
                 caption = block.data_json.get("caption")
@@ -178,7 +165,7 @@ def PublicPageContent(
                 if spec:
                     try:
                         png_bytes = ctx.renderer.render_chart(spec, 600, 400, 100)
-                        b64 = base64.b64encode(png_bytes).decode('utf-8')
+                        b64 = base64.b64encode(png_bytes).decode("utf-8")
                         img = ft.Image(src_base64=b64)
                         controls.append(img)
                     except Exception as e:
@@ -188,17 +175,12 @@ def PublicPageContent(
             controls.append(ft.Container(height=10))
 
     return ft.Container(
-        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO),
-        padding=20,
-        expand=True
+        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO), padding=20, expand=True
     )
 
 
 def LinkRedirectContent(
-    page: ft.Page,
-    ctx: ServiceContext,
-    state: AppState,
-    slug: str | None = None
+    page: ft.Page, ctx: ServiceContext, state: AppState, slug: str | None = None
 ) -> ft.Control:
     """Handle link redirect by slug - shows link info or redirects."""
     if not slug:
@@ -217,30 +199,30 @@ def LinkRedirectContent(
 
     # Display link page with redirect option
     return ft.Container(
-        content=ft.Column([
-            ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")),
-            ft.Divider(),
-            ft.Icon(name=link.icon or "link", size=48, color="primary"),
-            ft.Text(link.title, size=24, weight=ft.FontWeight.BOLD),
-            ft.Text(f"Redirecting to: {link.url}", color="onSurfaceVariant"),
-            ft.Container(height=20),
-            ft.ElevatedButton(
-                "Go to Link",
-                icon=ft.Icons.OPEN_IN_NEW,
-                on_click=lambda _: page.launch_url(str(link.url))
-            ),
-        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        content=ft.Column(
+            [
+                ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")),
+                ft.Divider(),
+                ft.Icon(name=link.icon or "link", size=48, color="primary"),
+                ft.Text(link.title, size=24, weight=ft.FontWeight.BOLD),
+                ft.Text(f"Redirecting to: {link.url}", color="onSurfaceVariant"),
+                ft.Container(height=20),
+                ft.ElevatedButton(
+                    "Go to Link",
+                    icon=ft.Icons.OPEN_IN_NEW,
+                    on_click=lambda _: page.launch_url(str(link.url)),
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        ),
         padding=40,
         expand=True,
-        alignment=ft.alignment.center
+        alignment=ft.alignment.center,
     )
 
 
 def TagFilterContent(
-    page: ft.Page,
-    ctx: ServiceContext,
-    state: AppState,
-    tag: str | None = None
+    page: ft.Page, ctx: ServiceContext, state: AppState, tag: str | None = None
 ) -> ft.Control:
     """Display posts filtered by tag (future: implement tagging system)."""
     if not tag:
@@ -253,25 +235,24 @@ def TagFilterContent(
     # Simple tag matching in title or summary
     tag_lower = tag.lower()
     filtered = [
-        item for item in all_items
+        item
+        for item in all_items
         if tag_lower in item.title.lower() or tag_lower in (item.summary or "").lower()
     ]
 
     controls: list[ft.Control] = []
 
     # Back Button
-    controls.append(ft.Container(
-        content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")),
-        padding=10
-    ))
+    controls.append(
+        ft.Container(
+            content=ft.TextButton("← Back to Home", on_click=lambda _: page.go("/")), padding=10
+        )
+    )
 
     # Header
-    controls.append(ft.Text(
-        f"Posts tagged: {tag}",
-        size=24,
-        weight=ft.FontWeight.BOLD,
-        color="primary"
-    ))
+    controls.append(
+        ft.Text(f"Posts tagged: {tag}", size=24, weight=ft.FontWeight.BOLD, color="primary")
+    )
     controls.append(ft.Divider())
 
     if not filtered:
@@ -283,12 +264,10 @@ def TagFilterContent(
                 ft.ListTile(
                     title=ft.Text(item.title, weight=ft.FontWeight.BOLD),
                     subtitle=ft.Text(f"{date_str} • {item.summary or 'No summary'}"),
-                    on_click=lambda _, slug=item.slug: page.go(f"/p/{slug}")
+                    on_click=lambda _, slug=item.slug: page.go(f"/p/{slug}"),
                 )
             )
 
     return ft.Container(
-        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO),
-        padding=20,
-        expand=True
+        content=ft.Column(controls, scroll=ft.ScrollMode.AUTO), padding=20, expand=True
     )

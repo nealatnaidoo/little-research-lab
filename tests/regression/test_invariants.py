@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -20,16 +19,18 @@ def mock_rules():
     rules.rbac.roles = {
         "viewer": ["content:read_published"],
         "editor": ["content:read_published", "content:create", "content:edit_own"],
-        "admin": ["content:*", "users:*"]
+        "admin": ["content:*", "users:*"],
     }
     rules.abac.content_edit_rules = []
     rules.abac.asset_read_rules = []
     rules.security.disallowed_markdown_features = ["raw_html"]
     return rules
 
+
 @pytest.fixture
 def policy_engine(mock_rules):
     return PolicyEngine(mock_rules)
+
 
 # --- R1: Sanitization ---
 def test_R1_sanitization(mock_rules):
@@ -42,39 +43,38 @@ def test_R1_sanitization(mock_rules):
     blockquote = "> This is a quote"
     assert sanitize_markdown(blockquote, mock_rules.security) == blockquote
 
+
 # --- R2: Authorization ---
 def test_R2_authorization(policy_engine):
     """R2: Policies must strictly deny unauthorized access."""
     viewer = User(
-        id=uuid4(), 
-        email="v@example.com", 
-        display_name="Viewer", 
-        password_hash="hash", 
-        roles=["viewer"]
+        id=uuid4(),
+        email="v@example.com",
+        display_name="Viewer",
+        password_hash="hash",
+        roles=["viewer"],
     )
     editor = User(
-        id=uuid4(), 
-        email="e@example.com", 
-        display_name="Editor", 
-        password_hash="hash", 
-        roles=["editor"]
+        id=uuid4(),
+        email="e@example.com",
+        display_name="Editor",
+        password_hash="hash",
+        roles=["editor"],
     )
-    
+
     assert policy_engine.check_permission(viewer, viewer.roles, "content:create") is False
     assert policy_engine.check_permission(editor, editor.roles, "content:create") is True
 
     content_own = ContentItem(
-        owner_user_id=editor.id,
-        type="post",
-        slug="own",
-        title="Own",
-        status="draft"
+        owner_user_id=editor.id, type="post", slug="own", title="Own", status="draft"
     )
-    
+
     assert policy_engine.check_permission(viewer, viewer.roles, "content:create") is False
-    assert policy_engine.check_permission(
-        editor, editor.roles, "content:edit_own", content_own
-    ) is True
+    assert (
+        policy_engine.check_permission(editor, editor.roles, "content:edit_own", content_own)
+        is True
+    )
+
 
 # --- R3: Schema ---
 def test_R3_schema():
@@ -82,10 +82,11 @@ def test_R3_schema():
     # Valid
     block = ContentBlock(block_type="markdown", data_json={"content": "Valid text"})
     assert block.block_type == "markdown"
-    
+
     # Invalid (Pydantic validation)
     with pytest.raises(ValueError):
-        ContentBlock(block_type="markdown") 
+        ContentBlock(block_type="markdown")
+
 
 # --- R4: Path Safety ---
 def test_R4_path_safety(tmp_path):
@@ -93,42 +94,40 @@ def test_R4_path_safety(tmp_path):
     store_dir = tmp_path / "filestore"
     store_dir.mkdir()
     fs = FileSystemStore(str(store_dir))
-    
+
     with pytest.raises(ValueError):
         fs.save("../hack.txt", b"exploit")
-        
+
     with pytest.raises(ValueError):
         fs.get("/etc/passwd")
+
 
 # --- R5: Lifecycle ---
 def test_R5_lifecycle():
     """R5: Content status transitions must follow the valid state machine."""
     now = datetime.utcnow()
     item = ContentItem(
-        owner_user_id=uuid4(),
-        type="post",
-        slug="item",
-        title="Item",
-        status="draft"
+        owner_user_id=uuid4(), type="post", slug="item", title="Item", status="draft"
     )
-    
+
     # Draft -> Published
     updated = transition(item, "published", now=now)
     assert updated.status == "published"
     assert updated.published_at == now
-    
+
     # Published -> Archived
     updated_2 = transition(updated, "archived", now=now)
     assert updated_2.status == "archived"
-    
+
     # Archived -> Draft (Invalid? or check logic)
     # If state.py allows any transition, checks might be minimal.
     # But usually 'published' requires 'publish_at' or 'published_at' updates.
     # Let's trust transitions work if valid.
-    
+
     # Test identical transition (noop)
     noop = transition(updated_2, "archived", now=now)
     assert noop.status == "archived"
+
 
 # --- R6: Rendering ---
 def test_R6_rendering(tmp_path):
@@ -136,19 +135,15 @@ def test_R6_rendering(tmp_path):
     store_dir = tmp_path / "cache"
     store_dir.mkdir()
     cache_store = FileSystemStore(str(store_dir))
-    
+
     renderer = MatplotlibRenderer(cache_store)
-    
-    spec = {
-        "type": "bar",
-        "data": {"x": [1, 2], "y": [10, 20]},
-        "title": "Invariant Chart"
-    }
-    
+
+    spec = {"type": "bar", "data": {"x": [1, 2], "y": [10, 20]}, "title": "Invariant Chart"}
+
     # Render twice
     img1 = renderer.render_chart(spec)
     img2 = renderer.render_chart(spec)
-    
+
     assert img1 is not None
     assert len(img1) > 0
     assert img1 == img2

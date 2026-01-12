@@ -1,4 +1,3 @@
-
 import os
 import sys
 from pathlib import Path
@@ -11,7 +10,7 @@ def validate_ops_rules(rules: Rules, base_dir: Path) -> None:
     Validate operational requirements before startup.
     """
     ops = rules.ops
-    
+
     # 1. Check Data Dir
     if ops.data_dir_required:
         # Assuming data dir is where lrl.db lives, usually defined by env or default?
@@ -25,14 +24,14 @@ def validate_ops_rules(rules: Rules, base_dir: Path) -> None:
     for env_var in ops.required_env:
         if env_var not in os.environ:
             missing.append(env_var)
-            
+
     if missing:
         print(
-            f"CRITICAL: Missing required environment variables: {', '.join(missing)}", 
-            file=sys.stderr
+            f"CRITICAL: Missing required environment variables: {', '.join(missing)}",
+            file=sys.stderr,
         )
         sys.exit(1)
-    
+
     # 3. Check Bootstrap Env if enabled and likely needed
     # (Actually handled in bootstrap logic, but we could warn here)
     if ops.bootstrap_admin.enabled_if_no_users:

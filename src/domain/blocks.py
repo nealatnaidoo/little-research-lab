@@ -13,7 +13,7 @@ class BlockValidator:
     def validate(self, block: ContentBlock) -> None:
         """
         Validate a ContentBlock against strict schema rules.
-        
+
         Raises:
             ValueError: If validation fails.
         """
@@ -25,7 +25,7 @@ class BlockValidator:
         # schemas is a dict[str, BlockSchema], so use .get()
         schema = self.rules.schemas.get(block.block_type)
         if not schema:
-            return 
+            return
 
         # 3. Check required fields
         for req_field in schema.required:
@@ -50,14 +50,14 @@ class BlockValidator:
                 raise ValueError(f"Field '{field_name}' too short (min {props.min}).")
             if props.max is not None and len(value) > props.max:
                 raise ValueError(f"Field '{field_name}' too long (max {props.max}).")
-                
+
         elif expected_type == "int":
-            if not isinstance(value, int) or isinstance(value, bool): # bool is int in python
+            if not isinstance(value, int) or isinstance(value, bool):  # bool is int in python
                 raise ValueError(f"Field '{field_name}' must be an integer.")
             if props.min is not None and value < props.min:
-                 raise ValueError(f"Field '{field_name}' too small (min {props.min}).")
+                raise ValueError(f"Field '{field_name}' too small (min {props.min}).")
             if props.max is not None and value > props.max:
-                 raise ValueError(f"Field '{field_name}' too large (max {props.max}).")
+                raise ValueError(f"Field '{field_name}' too large (max {props.max}).")
 
         elif expected_type == "uuid":
             # Can be string representation or actual UUID object?
@@ -73,11 +73,11 @@ class BlockValidator:
 
         elif expected_type == "object":
             if not isinstance(value, dict):
-                 raise ValueError(f"Field '{field_name}' must be an object/dict.")
+                raise ValueError(f"Field '{field_name}' must be an object/dict.")
             # Max bytes check
             if props.max_bytes is not None:
                 # Estimate size by dumping to JSON
                 size = len(json.dumps(value))
                 if size > props.max_bytes:
-                     msg = f"Field '{field_name}' exceeds size limit ({size} > {props.max_bytes})."
-                     raise ValueError(msg)
+                    msg = f"Field '{field_name}' exceeds size limit ({size} > {props.max_bytes})."
+                    raise ValueError(msg)

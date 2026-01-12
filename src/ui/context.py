@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.app_shell.rate_limit import RateLimiter
+    from src.components.scheduler.ports import PublishJobRepoPort
     from src.ports.renderer import RendererPort
     from src.ports.repo import (
         AssetRepoPort,
@@ -14,11 +15,10 @@ if TYPE_CHECKING:
         LinkRepoPort,
         UserRepoPort,
     )
-    from src.services.collab import CollabService
-    from src.services.invite import InviteService
-    from src.services.publish import PublishService
 
 from src.adapters.auth.crypto import Argon2AuthAdapter
+from src.adapters.auth.session_store import InMemorySessionStore
+from src.adapters.clock import SystemClock
 from src.adapters.fs.filestore import FileSystemStore
 from src.adapters.render.mpl_renderer import MatplotlibRenderer
 from src.adapters.sqlite.repos import (
@@ -27,46 +27,47 @@ from src.adapters.sqlite.repos import (
     SQLiteContentRepo,
     SQLiteInviteRepo,
     SQLiteLinkRepo,
+    SQLitePublishJobRepo,
     SQLiteUserRepo,
 )
+from src.app_shell.rate_limit import RateLimiter
 from src.domain.blocks import BlockValidator
 from src.domain.policy import PolicyEngine
-from src.ports.renderer import RendererPort
-from src.ports.repo import (
-    AssetRepoPort,
-    CollabRepoPort,
-    ContentRepoPort,
-    InviteRepoPort,
-    LinkRepoPort,
-    UserRepoPort,
-)
 from src.rules.models import Rules
-from src.services.asset import AssetService
-from src.services.auth import AuthService
-from src.services.content import ContentService
 
 
 @dataclass
 class ServiceContext:
-    auth_service: AuthService
-    content_service: ContentService
-    asset_service: AssetService
-    publish_service: PublishService
-    invite_service: InviteService
-    collab_service: CollabService
+    # Repositories
     user_repo: UserRepoPort
     content_repo: ContentRepoPort
     asset_repo: AssetRepoPort
     link_repo: LinkRepoPort
     invite_repo: InviteRepoPort
     collab_repo: CollabRepoPort
+    publish_job_repo: PublishJobRepoPort
+
+    # Adapters
     renderer: RendererPort
+    # Type as AuthAdapterPort if imported, using Any to avoid circular deps
+    auth_adapter: Any
+    clock: Any
+    session_store: Any
+
+    # Domain
     policy: PolicyEngine
-    rate_limiter: RateLimiter
+    validator: BlockValidator
     rules: Rules
-    clock: Any = None # For testing/injection
-    # Add other services/repos as needed
-    
+    rate_limiter: RateLimiter
+
+    # Legacy services - stubs for app_shell compatibility during migration
+    # TODO: Remove after app_shell migrated to atomic components (EV-0003)
+    content_service: Any = None
+    asset_service: Any = None
+    publish_service: Any = None
+    auth_service: Any = None
+    invite_service: Any = None
+
     @classmethod
     def create(cls, db_path: str, fs_path: str, rules: Rules) -> ServiceContext:
         # Adapters
@@ -76,52 +77,34 @@ class ServiceContext:
         link_repo = SQLiteLinkRepo(db_path)
         invite_repo = SQLiteInviteRepo(db_path)
         collab_repo = SQLiteCollabRepo(db_path)
-        
+        publish_job_repo = SQLitePublishJobRepo(db_path)
+
         fs_store = FileSystemStore(fs_path)
         renderer = MatplotlibRenderer(fs_store)
         auth_adapter = Argon2AuthAdapter()
-        
+        clock = SystemClock()
+        session_store = InMemorySessionStore()
+
         # Domain
         policy = PolicyEngine(rules)
         validator = BlockValidator(rules.blocks)
-        
-        # Services
-        # Adapters for Publish
-        from src.adapters.clock import SystemClock
-        from src.services.publish import PublishService
-        
-        auth_service = AuthService(user_repo, auth_adapter, policy)
-        content_service = ContentService(content_repo, policy, validator, collab_repo)
-        asset_service = AssetService(asset_repo, fs_store, policy, rules.uploads)
-        
-        clock = SystemClock()
-        publish_service = PublishService(content_repo, policy, clock)
-        
-        from src.services.invite import InviteService
-        invite_service = InviteService(invite_repo, user_repo, auth_adapter, policy)
 
-        from src.services.collab import CollabService
-        collab_service = CollabService(collab_repo, content_repo, user_repo, policy)
-        
-        from src.app_shell.rate_limit import RateLimiter
         rate_limiter = RateLimiter(rules.rate_limits)
-        
+
         return cls(
-            auth_service=auth_service,
-            content_service=content_service,
-            asset_service=asset_service,
-            publish_service=publish_service,
-            invite_service=invite_service,
-            collab_service=collab_service,
             user_repo=user_repo,
             content_repo=content_repo,
             asset_repo=asset_repo,
             link_repo=link_repo,
             invite_repo=invite_repo,
             collab_repo=collab_repo,
+            publish_job_repo=publish_job_repo,
             renderer=renderer,
+            auth_adapter=auth_adapter,
+            clock=clock,
+            session_store=session_store,
             policy=policy,
-            rate_limiter=rate_limiter,
+            validator=validator,
             rules=rules,
-            clock=clock
+            rate_limiter=rate_limiter,
         )
