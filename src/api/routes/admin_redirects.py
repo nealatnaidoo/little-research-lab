@@ -24,41 +24,13 @@ from src.components.redirects import (
     RedirectService,
     RedirectValidationError,
 )
+from src.api.deps import get_redirect_repo
 
 router = APIRouter()
 
 
-# --- Mock Repository for Dependencies ---
-
-
-class InMemoryRedirectRepo:
-    """In-memory redirect repository."""
-
-    def __init__(self) -> None:
-        self._redirects: dict[UUID, Redirect] = {}
-        self._by_source: dict[str, Redirect] = {}
-
-    def get_by_id(self, redirect_id: UUID) -> Redirect | None:
-        return self._redirects.get(redirect_id)
-
-    def get_by_source(self, source_path: str) -> Redirect | None:
-        return self._by_source.get(source_path.lower())
-
-    def save(self, redirect: Redirect) -> Redirect:
-        self._redirects[redirect.id] = redirect
-        self._by_source[redirect.source_path.lower()] = redirect
-        return redirect
-
-    def delete(self, redirect_id: UUID) -> None:
-        redirect = self._redirects.pop(redirect_id, None)
-        if redirect:
-            self._by_source.pop(redirect.source_path.lower(), None)
-
-    def list_all(self) -> list[Redirect]:
-        return list(self._redirects.values())
-
-
-# --- Request/Response Models ---
+# Shared repository (in production, inject from DI container)
+# _redirect_repo = InMemoryRedirectRepo()
 
 
 class CreateRedirectRequest(BaseModel):
@@ -141,13 +113,16 @@ def _serialize_errors(
 
 
 # Shared repository (in production, inject from DI container)
-_redirect_repo = InMemoryRedirectRepo()
+# Shared repository (in production, inject from DI container)
+# _redirect_repo = InMemoryRedirectRepo()
 
 
-def get_redirect_service() -> RedirectService:
+def get_redirect_service(
+    repo: Any = Depends(get_redirect_repo),
+) -> RedirectService:
     """Get redirect service dependency."""
     return RedirectService(
-        repo=_redirect_repo,
+        repo=repo,
         config=RedirectConfig(),
     )
 

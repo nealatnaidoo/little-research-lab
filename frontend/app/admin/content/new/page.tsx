@@ -12,68 +12,78 @@ import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
+    FormDescription,
     FormField,
     FormItem,
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { ContentService, ContentBlockModel } from "@/lib/api"
-import { Editor } from "@/components/content/editor"
+import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/editor/RichTextEditor"
+import { ContentService } from "@/lib/api"
 
 const formSchema = z.object({
-    title: z.string().min(1, "Title is required"),
-    slug: z.string().min(1, "Slug is required"),
-    status: z.enum(["draft", "published", "archived", "scheduled"]),
-    type: z.enum(["post", "page"]),
+    title: z.string().min(2, "Title must be at least 2 characters."),
+    slug: z.string().min(2, "Slug must be at least 2 characters.")
+        .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens."),
+    description: z.string().optional(),
+    body: z.any().optional(), // JSON object from TipTap
 })
 
 export default function NewContentPage() {
     const router = useRouter()
-    const [isLoading, setIsLoading] = useState(false)
-    const [blocks, setBlocks] = useState<ContentBlockModel[]>([])
+    const [saving, setSaving] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: "",
             slug: "",
-            status: "draft",
-            type: "post"
+            description: "",
+            body: {},
         },
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsLoading(true)
         try {
-            await ContentService.createContentApiContentPost({
+            setSaving(true)
+            await ContentService.create({
                 title: values.title,
                 slug: values.slug,
-                status: values.status as any,
-                type: values.type as any,
-                blocks: blocks
-            });
+                description: values.description,
+                body: values.body, // JSON
+                // defaults: status=draft, type=article
+            })
             toast.success("Content created")
             router.push("/admin/content")
-        } catch (e) {
-            console.error(e)
+        } catch (error) {
+            console.error(error)
             toast.error("Failed to create content")
         } finally {
-            setIsLoading(false)
+            setSaving(false)
+        }
+    }
+
+    // Auto-generate slug from title
+    const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const title = e.target.value
+        form.setValue("title", title)
+        if (!form.getValues("slug")) {
+            const slug = title.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '')
+            form.setValue("slug", slug)
         }
     }
 
     return (
-        <div className="space-y-6 max-w-3xl">
+        <div className="space-y-6 max-w-4xl mx-auto py-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">New Content</h1>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">New Content</h1>
+                    <p className="text-muted-foreground">Create a new post or article.</p>
+                </div>
             </div>
 
             <Form {...form}>
@@ -85,12 +95,9 @@ export default function NewContentPage() {
                             <FormItem>
                                 <FormLabel>Title</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="My New Post" {...field} onChange={(e) => {
-                                        field.onChange(e);
-                                        // Auto-slug
-                                        if (!form.getValues("slug")) {
-                                            form.setValue("slug", e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
-                                        }
+                                    <Input placeholder="Post title" {...field} onChange={(e) => {
+                                        field.onChange(e)
+                                        handleTitleChange(e)
                                     }} />
                                 </FormControl>
                                 <FormMessage />
@@ -98,54 +105,59 @@ export default function NewContentPage() {
                         )}
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="slug"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Slug</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Status</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="draft">Draft</SelectItem>
-                                            <SelectItem value="published">Published</SelectItem>
-                                            <SelectItem value="archived">Archived</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                    <FormField
+                        control={form.control}
+                        name="slug"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Slug</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="post-slug" {...field} />
+                                </FormControl>
+                                <FormDescription>URL-friendly identifier.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                    <div className="space-y-2">
-                        <FormLabel>Content</FormLabel>
-                        <Editor onChange={setBlocks} />
-                    </div>
+                    <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Short summary..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
 
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create
+                    <FormField
+                        control={form.control}
+                        name="body"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Body</FormLabel>
+                                <FormControl>
+                                    <RichTextEditor
+                                        onChange={field.onChange}
+                                        content={field.value}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <div className="flex justify-end gap-4">
+                        <Button variant="outline" type="button" onClick={() => router.back()}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={saving}>
+                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create Content
                         </Button>
                     </div>
                 </form>

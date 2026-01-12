@@ -86,6 +86,22 @@ class MockPublishJobRepo:
             return job
         return None
 
+    def list_in_range(
+        self,
+        start_utc: datetime,
+        end_utc: datetime,
+        statuses: list[str] | None = None,
+    ) -> list[PublishJob]:
+        """List jobs with publish_at in the given date range."""
+        result = []
+        for job in self.jobs.values():
+            if start_utc <= job.publish_at_utc <= end_utc:
+                if statuses is None or job.status in statuses:
+                    result.append(job)
+        # Sort by publish_at
+        result.sort(key=lambda j: j.publish_at_utc)
+        return result
+
 
 @dataclass
 class MockTimePort:

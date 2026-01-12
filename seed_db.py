@@ -81,6 +81,69 @@ def seed():
         created_by_user_id TEXT,
         created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS redirects (
+        id TEXT PRIMARY KEY,
+        source_path TEXT,
+        target_path TEXT,
+        status_code INTEGER,
+        enabled BOOLEAN,
+        created_at TEXT,
+        updated_at TEXT,
+        created_by TEXT,
+        notes TEXT
+    );
+    CREATE TABLE IF NOT EXISTS site_settings (
+        id INTEGER PRIMARY KEY,
+        site_title TEXT,
+        site_subtitle TEXT,
+        avatar_asset_id TEXT,
+        theme TEXT,
+        social_links_json TEXT,
+        updated_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS link_items (
+        id TEXT PRIMARY KEY,
+        slug TEXT,
+        title TEXT,
+        url TEXT,
+        icon TEXT,
+        status TEXT,
+        position INTEGER,
+        visibility TEXT,
+        group_id TEXT
+    );
+    CREATE TABLE IF NOT EXISTS invites (
+        id TEXT PRIMARY KEY,
+        token_hash TEXT,
+        role TEXT,
+        expires_at TEXT,
+        redeemed_at TEXT,
+        redeemed_by_user_id TEXT,
+        created_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS collaboration_grants (
+        id TEXT PRIMARY KEY,
+        content_item_id TEXT,
+        user_id TEXT,
+        scope TEXT,
+        created_at TEXT,
+        UNIQUE(content_item_id, user_id)
+    );
+    CREATE TABLE IF NOT EXISTS publish_jobs (
+        id TEXT PRIMARY KEY,
+        content_id TEXT,
+        publish_at_utc TEXT,
+        status TEXT,
+        attempts INTEGER,
+        last_attempt_at TEXT,
+        next_retry_at TEXT,
+        completed_at TEXT,
+        actual_publish_at TEXT,
+        error_message TEXT,
+        claimed_by TEXT,
+        created_at TEXT,
+        updated_at TEXT
+    );
     """)
     conn.commit()
 
@@ -103,6 +166,16 @@ def seed():
         print(f"Created user: {email} / changeme")
     else:
         print(f"User {email} already exists")
+
+    # Seed Redirect
+    cursor.execute("SELECT id FROM redirects WHERE source_path = ?", ("/old-seed",))
+    if not cursor.fetchone():
+        cursor.execute("""
+            INSERT INTO redirects (id, source_path, target_path, status_code, enabled, created_at, updated_at, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (str(uuid4()), "/old-seed", "/", 301, 1, datetime.utcnow(), datetime.utcnow(), str(existing.id if existing else u.id)))
+        print("Created redirect: /old-seed -> /")
+        conn.commit()
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ from src.adapters.sqlite.repos import (
     SQLiteLinkRepo,
     SQLiteSiteSettingsRepo,
     SQLiteUserRepo,
+    SQLiteRedirectRepo,
 )
 from src.api.auth_utils import decode_access_token
 from src.domain.blocks import BlockValidator
@@ -74,6 +75,10 @@ def get_link_repo(settings: Settings = Depends(get_settings)) -> SQLiteLinkRepo:
 
 def get_user_repo(settings: Settings = Depends(get_settings)) -> SQLiteUserRepo:
     return SQLiteUserRepo(settings.db_path)
+
+
+def get_redirect_repo(settings: Settings = Depends(get_settings)) -> SQLiteRedirectRepo:
+    return SQLiteRedirectRepo(settings.db_path)
 
 
 # --- Services ---

@@ -628,6 +628,25 @@ class SchedulerService:
         far_future = self._now_utc() + timedelta(days=365 * 10)
         return self._repo.list_due_jobs(far_future, limit)
 
+    def list_jobs_in_range(
+        self,
+        start_utc: datetime,
+        end_utc: datetime,
+        statuses: list[str] | None = None,
+    ) -> list[PublishJob]:
+        """
+        List jobs with publish_at in the given date range.
+
+        Args:
+            start_utc: Start of range (inclusive)
+            end_utc: End of range (inclusive)
+            statuses: Optional list of statuses to filter by
+
+        Returns:
+            List of jobs sorted by publish_at
+        """
+        return self._repo.list_in_range(start_utc, end_utc, statuses)
+
 
 # --- Factory ---
 

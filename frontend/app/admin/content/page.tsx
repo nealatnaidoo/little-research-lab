@@ -46,14 +46,11 @@ export default function ContentListPage() {
 
     const fetchContent = async () => {
         try {
-            // API client method name?
-            // Check PublicService? No, ContentService usually default/authed.
-            // Generated client: ContentService.listContentApiContentGet()
-            const data = await ContentService.listContentApiContentGet()
+            const data = await ContentService.list()
             setItems(data)
         } catch (error) {
             console.error(error)
-            // toast.error("Failed to load content") // Silent fail often better on init if auth issue
+            toast.error("Failed to load content")
         } finally {
             setLoading(false)
         }
@@ -62,10 +59,11 @@ export default function ContentListPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure?")) return;
         try {
-            await ContentService.deleteContentApiContentItemIdDelete(id);
+            await ContentService.delete(id);
             toast.success("Deleted item");
             fetchContent();
         } catch (e) {
+            console.error(e)
             toast.error("Delete failed");
         }
     }

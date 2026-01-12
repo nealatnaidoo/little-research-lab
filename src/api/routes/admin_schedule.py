@@ -463,9 +463,8 @@ def get_calendar(
     # Parse status filter
     statuses = [status] if status else None
 
-    # Get jobs in range from repo (access through service's internal repo)
-    repo = service._repo
-    jobs = repo.list_in_range(start, end, statuses)
+    # Get jobs in range from service
+    jobs = service.list_jobs_in_range(start, end, statuses)
 
     # Convert to calendar events
     events = [

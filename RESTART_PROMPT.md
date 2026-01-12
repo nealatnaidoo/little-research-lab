@@ -1,254 +1,274 @@
-# Little Research Lab — Restart Prompt
+# Little Research Lab — UI Development Restart Prompt
 
 **Date:** 2026-01-12
-**Context:** Resume development after QA audit and architectural violation remediation
+**Focus:** Continue UI development from the correct entry points
 
 ---
 
-## Prime Directive (Refresh)
+## Project Architecture
 
-Every change must be:
-- **Task-scoped** — traceable to a single task from the tasklist
-- **Atomic** — smallest meaningful increment
-- **Uniform** — component conventions (`src/components/<name>/component.py`, `models.py`, `ports.py`)
-- **Rules-driven** — domain behavior from `little-research-lab-v3_rules.yaml`
-- **Deterministic** — core has no I/O, globals, or env reads
-- **Verifiable** — tests + machine-readable evidence artifacts
+### Stack Overview
+| Layer | Technology | Location |
+|-------|------------|----------|
+| Backend API | FastAPI (Python) | `src/api/routes/` |
+| Business Logic | Atomic Components | `src/components/*/component.py` |
+| Frontend | Next.js 14 (App Router) | `frontend/` |
+| UI Components | shadcn/ui + Tailwind | `frontend/components/ui/` |
+| State/API | OpenAPI client | `frontend/lib/api.ts` |
 
-**If drift is detected:** HALT → append EV entry → mark task blocked → request BA update.
+### Key Entry Points
 
----
-
-## Required Reading Before Work
-
+**Backend (Python):**
 ```
-little-research-lab-v3_spec.md        # What we're building
-little-research-lab-v3_tasklist.md    # Task dependency graph (36/50 done)
-little-research-lab-v3_rules.yaml     # Domain rules (validation, limits, policies)
-little-research-lab-v3_quality_gates.md # Quality requirements
-little-research-lab-v3_evolution.md   # Drift history (EV-0001, EV-0002 resolved)
-little-research-lab-v3_decisions.md   # Architectural decisions
-```
-
----
-
-## Latest Session Summary (2026-01-12)
-
-### QA Audit Findings (Fixed)
-
-A comprehensive QA audit identified and remediated architectural violations:
-
-| Violation | Components Affected | Resolution |
-|-----------|---------------------|------------|
-| Global state (`_SESSIONS` dict) | auth | Created `SessionStorePort` + `InMemorySessionStore` adapter |
-| Time I/O (`datetime.utcnow()`) | auth, invite, collab, bootstrap | Injected `TimePort` via dependency injection |
-| Rules file path mismatch | 31 test files | Updated to use `rules.yaml` |
-| `_impl.py` direct imports | 14 external files | Re-exported through `__init__.py`, updated imports |
-
-### _impl.py Remediation Pattern
-
-All 8 `_impl.py` files now have proper re-exports through `__init__.py`:
-
-```python
-# src/components/<name>/__init__.py
-
-# Re-exports from _impl for backwards compatibility
-from ._impl import (
-    ServiceClass,
-    ConfigClass,
-    # ... other exports
-)
-
-__all__ = [
-    # Entry points from component.py
-    "run",
-    "run_*",
-    # Models from models.py
-    ...
-    # Legacy _impl re-exports
-    "ServiceClass",
-    "ConfigClass",
-]
+src/
+├── api/routes/           # FastAPI endpoints
+│   ├── admin_settings.py # Settings API (GET/PUT)
+│   ├── admin_assets.py   # Assets API
+│   ├── admin_schedule.py # Scheduling API
+│   ├── admin_analytics.py# Analytics API
+│   └── ...
+├── components/           # Atomic business logic
+│   ├── settings/         # SettingsService
+│   ├── assets/           # AssetService
+│   ├── scheduler/        # SchedulerService
+│   ├── analytics/        # AnalyticsService
+│   └── ...
+└── core/entities.py      # Domain models
 ```
 
-**Critical:** When `_impl.py` and `models.py` define the same class name (e.g., `AuditEntry`), import from `_impl.py` FIRST to ensure correct types are used (Enum classes vs Literal types).
-
----
-
-## Current State
-
-### Quality Gates
-| Gate | Status |
-|------|--------|
-| pytest tests/ | ✅ 1253 passed |
-| mypy src/ | ⚠️ 8 pre-existing errors in admin_schedule.py (PublishJob type mismatch) |
-| ruff check src/ | ✅ 0 errors |
-| Legacy _impl imports | ✅ None in external code |
-
-### Architecture
-- **Domain layer:** Fully atomic (`src/components/*/component.py`)
-- **Shell layer:** Imports migrated to `src/components/*` (not `_impl` directly)
-- **Determinism:** All components use injected Ports for time and storage
-- **Legacy services:** Deprecated at `src/core/services/` with DEPRECATED.md
-
-### Known Technical Debt
-1. **PublishJob type mismatch:** `src.core.entities.PublishJob` vs `src.components.scheduler.models.PublishJob` — 8 mypy errors in `admin_schedule.py`
-2. **Test warnings:** 869 deprecation warnings for `datetime.utcnow()` in test files
-
----
-
-## Remaining Tasks (14 TODO)
-
-### Backend Tasks (Ready to Start)
-| ID | Title | Spec Refs |
-|----|-------|-----------|
-| T-0017 | Implement /latest alias resolution + admin set_latest | E2.3, TA-0012-0013 |
-| T-0021 | Public SSR route for Resource(PDF) + embed/fallback | E3.2, TA-0016-0018 |
-| T-0030 | Implement admin schedule calendar API | E5.3, TA-0031 |
-| T-0046 | Implement public-only visibility guard | R1 |
-| T-0047 | Add privacy schema enforcement check in CI | R4, TA-0035 |
-| T-0048 | Implement backups + restore drill script | NFR-R2, TA-0050 |
-
-### UI Tasks (Blocked on Framework Patterns)
-| ID | Title | Blocked By |
-|----|-------|------------|
-| T-0013 | Build admin Settings UI page | Need React/Next.js UI pattern |
-| T-0020 | Admin UI for Resource(PDF) create/edit | T-0013 pattern |
-| T-0024 | Implement admin rich text editor UI | T-0013 pattern |
-| T-0025 | Inline image insert workflow | T-0024 |
-| T-0031 | Implement admin calendar UI | T-0030 |
-| T-0037 | Implement admin analytics UI | T-0036 |
-| T-0022 | PDF viewer embed + iOS/Safari fallback | T-0021 |
-
-### Final Task
-| ID | Title | Blocked By |
-|----|-------|------------|
-| T-0050 | End-to-end regression suite | T-0013, T-0037, T-0040, T-0045, T-0049 |
-
----
-
-## Lessons Learned (This Session)
-
-### 1. Re-export _impl.py classes through __init__.py
-External code should never import from `_impl.py` directly. Always re-export through `__init__.py` for:
-- Clean import paths (`from src.components.audit import AuditService`)
-- Version control over what's public
-- Future refactoring flexibility
-
-### 2. Type consistency when re-exporting
-When both `models.py` and `_impl.py` define the same class name:
-- Import `_impl.py` FIRST
-- Remove duplicates from `models.py` import
-- Ensures type consistency (e.g., Enum vs Literal types)
-
-### 3. Deterministic core means NO time I/O
-`datetime.utcnow()` and `datetime.now()` violate determinism. Always:
-- Create a `TimePort` protocol
-- Inject time adapter via dependency injection
-- Use `time.now_utc()` in components
-
-### 4. Global state violates determinism
-Module-level dicts (like `_SESSIONS = {}`) are global state. Instead:
-- Create a `StoragePort` protocol
-- Inject storage adapter via dependency injection
-- Adapters can use in-memory dicts, Redis, etc.
-
-### 5. Ruff import ordering can expose conflicts
-When `ruff check --fix` reorders imports:
-- `_impl` imports may come before `models` imports
-- This causes "redefinition" errors
-- Solution: Remove duplicate names from `models` import
-
----
-
-## Component Structure Standard
-
+**Frontend (Next.js):**
 ```
-src/components/<component_name>/
-  __init__.py          # Re-exports (including from _impl.py)
-  component.py         # run_*() entry points (pure functions)
-  models.py            # Input/Output dataclasses
-  ports.py             # Protocol definitions (TimePort, StoragePort, etc.)
-  _impl.py             # Legacy service code (re-exported, not imported directly)
+frontend/
+├── app/
+│   ├── admin/
+│   │   ├── layout.tsx       # Admin shell (sidebar, auth)
+│   │   ├── page.tsx         # Dashboard
+│   │   ├── settings/page.tsx# Settings (PLACEHOLDER)
+│   │   ├── content/         # Content management
+│   │   ├── assets/          # Asset management
+│   │   └── users/           # User management
+│   ├── login/page.tsx       # Login page
+│   └── p/[slug]/page.tsx    # Public post page
+├── components/
+│   ├── ui/                  # shadcn/ui primitives
+│   ├── content/editor.tsx   # Content editor
+│   ├── assets/upload-dialog.tsx
+│   └── auth/login-form.tsx
+└── lib/
+    └── api.ts               # Generated OpenAPI client
 ```
 
-Entry points are `run_*()` functions that:
-- Accept input dataclass + injected ports
-- Return output dataclass
-- Have NO I/O, globals, or env reads
+---
+
+## UI Tasks (Priority Order)
+
+### Ready to Implement
+
+| ID | Task | API Ready | Entry Point |
+|----|------|-----------|-------------|
+| **T-0013** | Admin Settings UI | `/api/admin/settings` | `frontend/app/admin/settings/page.tsx` |
+| **T-0030** | Admin Schedule Calendar API | Need to implement | `src/api/routes/admin_schedule.py` |
+| **T-0031** | Admin Calendar UI | After T-0030 | `frontend/app/admin/schedule/page.tsx` |
+| **T-0037** | Admin Analytics UI | `/api/admin/analytics/*` | `frontend/app/admin/analytics/page.tsx` |
+
+### Blocked (Require Prerequisites)
+
+| ID | Task | Blocked By | Notes |
+|----|------|------------|-------|
+| T-0020 | Resource(PDF) Editor UI | T-0013 pattern | Use Settings UI as template |
+| T-0024 | Rich Text Editor | T-0013 pattern | TipTap/ProseMirror integration |
+| T-0025 | Inline Image Insert | T-0024 | Requires editor foundation |
+| T-0022 | PDF Viewer Embed | T-0021 (backend) | iOS/Safari fallback needed |
 
 ---
 
-## Task Discipline Reminder
+## Recommended Starting Task: T-0013 (Settings UI)
 
-1. **Select ONE task** with satisfied dependencies
-2. **Mark it `in_progress`** in tasklist
-3. **Confirm spec_refs and tests_required**
-4. **Write tests first** (TDD red-green-refactor)
-5. **Run quality gates** after completion
-6. **Mark task `done`** with evidence paths
-7. **If drift detected:** HALT → EV entry → block task
+### Why Start Here
+1. **API is ready:** `/api/admin/settings` endpoints exist
+2. **Establishes patterns:** Form handling, API integration, toast notifications
+3. **Unblocks others:** T-0020, T-0024 use this as a template
+4. **Visible progress:** Immediate user value
+
+### Current State
+`frontend/app/admin/settings/page.tsx` is a placeholder:
+```tsx
+// Current: placeholder cards with "coming soon"
+<Card>
+    <CardHeader>
+        <CardTitle>Site Configuration</CardTitle>
+    </CardHeader>
+    <CardContent>
+        <p>Site configuration coming soon.</p>
+    </CardContent>
+</Card>
+```
+
+### Implementation Requirements
+1. **Fetch settings on mount** via `GET /api/admin/settings`
+2. **Form with fields:**
+   - `site_title` (string)
+   - `site_description` (string)
+   - `meta_keywords` (string)
+   - `og_image_url` (optional string)
+   - `twitter_handle` (optional string)
+3. **Submit handler** via `PUT /api/admin/settings`
+4. **Toast notifications** for success/error
+5. **Loading states** during fetch/submit
+
+### Pattern to Follow
+```tsx
+"use client"
+
+import { useEffect, useState } from "react"
+import { useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { SettingsService } from "@/lib/api"
+// ... shadcn/ui imports
+
+export default function SettingsPage() {
+    const [loading, setLoading] = useState(true)
+    const form = useForm<SettingsFormData>()
+
+    useEffect(() => {
+        // Fetch current settings
+        SettingsService.getSettings().then(data => {
+            form.reset(data)
+            setLoading(false)
+        }).catch(err => {
+            toast.error("Failed to load settings")
+        })
+    }, [])
+
+    const onSubmit = async (data: SettingsFormData) => {
+        try {
+            await SettingsService.updateSettings(data)
+            toast.success("Settings saved")
+        } catch (err) {
+            toast.error("Failed to save settings")
+        }
+    }
+
+    if (loading) return <Skeleton />
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                {/* Form fields */}
+            </form>
+        </Form>
+    )
+}
+```
 
 ---
 
-## Session Statistics (2026-01-12 QA Audit)
+## Quality Gates
 
-### Remediation Metrics
-| Category | Count |
-|----------|-------|
-| Architectural violations identified | 4 types |
-| Components with time I/O fixed | 4 (auth, invite, collab, bootstrap) |
-| `datetime.utcnow/now()` calls removed | 13 |
-| Global state violations fixed | 1 (_SESSIONS dict) |
-| `_impl.py` files with re-exports added | 8 |
-| External files updated (imports) | 14 |
-| Type conflicts resolved | 3 (audit, redirects, render) |
+Run after each task:
 
-### Quality Gate Results
-| Gate | Before | After |
-|------|--------|-------|
-| pytest | 1253 pass | 1253 pass |
-| mypy src/ | 61+ errors | 8 errors (pre-existing) |
-| ruff check | 58 violations | 0 violations |
-| Legacy _impl imports | 14 files | 0 files |
+```bash
+# Backend
+cd "/Users/naidooone/Documents/little research lab"
+python scripts/quality_gates.py
 
-### Files Modified
-| Category | Files |
-|----------|-------|
-| Component `__init__.py` (re-exports) | 8 |
-| Component `ports.py` (new ports) | 4 |
-| Component `component.py` (DI updates) | 4 |
-| API routes (import updates) | 9 |
-| Shell hooks (import updates) | 1 |
-| Adapters created | 1 (InMemorySessionStore) |
-| Test files (rules path fix) | 31 |
-
-### Knowledge Base Updates
-| Artifact | Changes |
-|----------|---------|
-| RESTART_PROMPT.md | Complete rewrite |
-| devlessons.md | +2 sections, +4 rules (22→26) |
-| New lessons documented | 5 |
-
-### Time Investment
-- QA audit identification: ~10 min
-- Architectural violation fixes: ~30 min
-- _impl.py re-export pattern: ~20 min
-- Type conflict resolution: ~15 min
-- Documentation & lessons: ~15 min
+# Frontend
+cd frontend
+npm run lint
+npm run build
+```
 
 ---
 
-## Instructions
+## API Reference
 
-**To resume work:**
-1. Read the required artifacts (spec, tasklist, rules, evolution)
-2. Select a task from "Backend Tasks (Ready to Start)" or discuss priority with user
-3. Follow task discipline strictly
-4. Run quality gates after each task: `pytest tests/` + `mypy src/` + `ruff check src/`
+### Settings API (T-0013)
+```
+GET  /api/admin/settings     → SettingsResponse
+PUT  /api/admin/settings     → SettingsResponse
+```
 
-**If you encounter:**
-- Missing spec coverage → HALT, create EV entry
-- Test failures unrelated to current task → Note in task, continue if isolated
-- Architectural ambiguity → Ask user before proceeding
-- Need to import from `_impl.py` → Re-export through `__init__.py` instead
+### Schedule Calendar API (T-0030)
+```
+GET  /api/admin/schedule/calendar?start=YYYY-MM-DD&end=YYYY-MM-DD
+     → list[PublishJobResponse]
+```
+
+### Analytics API (T-0037)
+```
+GET  /api/admin/analytics/totals?period=7d
+GET  /api/admin/analytics/timeseries?metric=pageviews&period=30d
+GET  /api/admin/analytics/top/content?limit=10
+GET  /api/admin/analytics/top/sources?limit=10
+GET  /api/admin/analytics/top/referrers?limit=10
+```
+
+---
+
+## Component Library
+
+The project uses **shadcn/ui** components. Available at `frontend/components/ui/`:
+- `button`, `input`, `label`, `form`
+- `card`, `table`, `tabs`
+- `dialog`, `sheet`, `dropdown-menu`
+- `select`, `skeleton`, `separator`
+- `toast` (via sonner)
+
+To add new components:
+```bash
+cd frontend
+npx shadcn@latest add [component-name]
+```
+
+---
+
+## Session Checklist
+
+Before starting work:
+1. [ ] Read this prompt
+2. [ ] Check `little-research-lab-v3_tasklist.md` for current status
+3. [ ] Verify backend API exists for your UI task
+4. [ ] Run quality gates to confirm clean state
+
+When implementing:
+1. [ ] Follow existing patterns in `frontend/app/admin/`
+2. [ ] Use shadcn/ui components
+3. [ ] Add loading and error states
+4. [ ] Test with backend running locally
+
+After completing:
+1. [ ] Run frontend lint/build
+2. [ ] Run backend quality gates
+3. [ ] Update tasklist with evidence
+4. [ ] Commit with descriptive message
+
+---
+
+## Quick Start Commands
+
+```bash
+# Start backend
+cd "/Users/naidooone/Documents/little research lab"
+uvicorn src.api.main:app --reload --port 8000
+
+# Start frontend (separate terminal)
+cd frontend
+npm run dev
+# → http://localhost:3000
+
+# Run all quality gates
+python scripts/quality_gates.py
+```
+
+---
+
+## Lessons Applied
+
+From the atomic refactoring (2026-01-12):
+- **Atomic components:** Business logic in `src/components/*/component.py`
+- **Deterministic core:** No `datetime.utcnow()` in components; use injected `TimePort`
+- **Re-exports:** Import from `src/components/X` not `src/components/X/_impl`
+- **Quality gates after every task:** lint, format, types, tests
+- **TDD where applicable:** Backend has comprehensive tests; UI uses manual verification
+
+For detailed lessons, see `/Users/naidooone/Documents/development prompts/devlessons.md`

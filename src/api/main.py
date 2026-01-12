@@ -39,6 +39,10 @@ app = FastAPI(
 
 # --- Routers ---
 from src.api.routes import (  # noqa: E402
+    admin_analytics,
+    admin_audit,
+    admin_redirects,
+    admin_schedule,
     admin_settings,
     assets,
     auth,
@@ -46,16 +50,22 @@ from src.api.routes import (  # noqa: E402
     public,
     public_assets,
     public_ssr,
+    public_redirects,
     users,
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(admin_settings.router, prefix="/api/admin/settings", tags=["Admin Settings"])
+app.include_router(admin_schedule.router, prefix="/api/admin/schedule", tags=["Admin Schedule"])
+app.include_router(admin_analytics.router, prefix="/api/admin/analytics", tags=["Admin Analytics"])
+app.include_router(admin_audit.router, prefix="/api/admin/audit", tags=["Admin Audit"])
+app.include_router(admin_redirects.router, prefix="/api/admin/redirects", tags=["Admin Redirects"])
 # admin_assets router removed
 app.include_router(content.router, prefix="/api/content", tags=["Content"])
 app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
+app.include_router(public_redirects.router, prefix="/api/public/redirects", tags=["Public Redirects"])
 app.include_router(public_ssr.router, prefix="", tags=["SSR"])
 app.include_router(public_assets.router, prefix="/assets", tags=["Assets Public"])
 
