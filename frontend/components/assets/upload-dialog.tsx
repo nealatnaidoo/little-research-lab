@@ -83,6 +83,7 @@ export function UploadDialog({ onUploadConfig, children }: UploadDialogProps) {
                             id="file"
                             type="file"
                             className="col-span-3"
+                            data-testid="assets-upload-input"
                             onChange={handleFileChange}
                         />
                     </div>
@@ -97,7 +98,7 @@ export function UploadDialog({ onUploadConfig, children }: UploadDialogProps) {
                     )}
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleUpload} disabled={!file || isLoading}>
+                    <Button onClick={handleUpload} disabled={!file || isLoading} data-testid="assets-upload-submit">
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Upload
                     </Button>

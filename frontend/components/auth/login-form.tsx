@@ -91,7 +91,11 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="m@example.com" {...field} />
+                                        <Input
+                                            placeholder="m@example.com"
+                                            data-testid="login-email"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -104,13 +108,22 @@ export function LoginForm() {
                                 <FormItem>
                                     <FormLabel>Password</FormLabel>
                                     <FormControl>
-                                        <Input type="password" {...field} />
+                                        <Input
+                                            type="password"
+                                            data-testid="login-password"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <Button className="w-full" type="submit" disabled={isLoading}>
+                        <Button
+                            className="w-full"
+                            type="submit"
+                            disabled={isLoading}
+                            data-testid="login-submit"
+                        >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sign in
                         </Button>
