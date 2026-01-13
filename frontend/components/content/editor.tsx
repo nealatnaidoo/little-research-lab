@@ -39,32 +39,12 @@ export function Editor({ initialBlocks, onChange }: EditorProps) {
         ],
         content: '', // Will init from effect
         onUpdate: ({ editor }) => {
-            const json = editor.getJSON();
-            // Map Tiptap JSON blocks to our ContentBlockModel
-            const blocks: ContentBlockModel[] = (json.content || []).map((node, index) => {
-                // Simplified mapping: Dump the node JSON into data_json
-                // We'll treat all these as "markdown" blocks for now, 
-                // effectively making our backend storage a list of JSON nodes.
-                // This works with the BlockRenderer "text" fallback if we extract text, 
-                // but for specific types we need better renderers.
-
-                // For MVP: JUST ONE BLOCK.
-                // It is too complex to map back and forth perfectly in 10 minutes without bugs.
-                // Let's use ONE block of type "markdown" that contains the full HTML/Text.
-                return null; // see below
-            }).filter(x => x) as any;
-
-            // ACTUAL MVP STRATEGY: 
-            // 1. One Block of type 'markdown'. 
-            // 2. data_json = { text: editor.getHTML() } (rendering HTML as markdown is a lie but convenient)
-            // OR use `tiptap-markdown` extension to get real markdown.
-
-            // Let's manually handle this for now.
+            // Convert entire TipTap document to a single markdown block with HTML content
             const html = editor.getHTML();
             const block: ContentBlockModel = {
-                block_type: ContentBlockModel.block_type.MARKDOWN, // We'll just render inner HTML in the renderer for now
+                block_type: ContentBlockModel.block_type.MARKDOWN,
                 position: 0,
-                data_json: { text: html } // Pass HTML as 'text' field. BlockRenderer needs to render HTML if it detects it or use dangerouslySetInnerHTML
+                data_json: { text: html }
             };
             onChange([block]);
         }

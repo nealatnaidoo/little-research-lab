@@ -1,7 +1,7 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
-/* eslint-disable */
+ 
 import type { UserCreateRequest } from '../models/UserCreateRequest';
 import type { UserResponse } from '../models/UserResponse';
 import type { UserUpdateRequest } from '../models/UserUpdateRequest';

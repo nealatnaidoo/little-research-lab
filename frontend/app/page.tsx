@@ -3,6 +3,22 @@ import { PublicService } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OpenAPI } from "@/lib/api";
 
+// Types for public content
+interface PublicPost {
+  id: string;
+  title: string;
+  slug: string;
+  summary?: string;
+  publish_at?: string;
+  created_at: string;
+}
+
+interface PublicLink {
+  id: string;
+  title: string;
+  url: string;
+}
+
 // Force dynamic rendering - no caching so content updates appear immediately
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +65,7 @@ export default async function Home() {
             {posts.length === 0 ? (
               <p className="text-muted-foreground">No posts found.</p>
             ) : (
-              posts.map((post: any) => (
+              posts.map((post: PublicPost) => (
                 <Card key={post.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>
@@ -79,7 +95,7 @@ export default async function Home() {
                 <p className="text-muted-foreground text-sm">No links yet.</p>
               ) : (
                 <ul className="space-y-3">
-                  {links.map((link: any) => (
+                  {links.map((link: PublicLink) => (
                     <li key={link.id}>
                       <a
                         href={link.url}

@@ -98,9 +98,10 @@ export default function EditUserPage() {
             });
             toast.success("User updated")
             router.push("/admin/users")
-        } catch (e: any) {
+        } catch (e) {
             console.error(e)
-            toast.error(e.body?.detail || "Failed to update user")
+            const err = e as { body?: { detail?: string } }
+            toast.error(err.body?.detail || "Failed to update user")
         } finally {
             setIsLoading(false)
         }

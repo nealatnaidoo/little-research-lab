@@ -45,6 +45,24 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { RedirectService, type RedirectResponse } from "@/lib/api"
 
+// Types for validation issues from API
+interface ValidationError {
+    message: string;
+    field?: string;
+}
+
+interface ValidationIssue {
+    source_path: string;
+    errors: ValidationError[];
+}
+
+interface ApiError {
+    body?: {
+        detail?: string;
+        errors?: ValidationError[];
+    };
+}
+
 const formSchema = z.object({
     source_path: z.string().startsWith("/", "Path must start with /"),
     target_path: z.string().startsWith("/", "Path must start with /"),
@@ -60,9 +78,11 @@ export default function RedirectsPage() {
     const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
-    const [validationIssues, setValidationIssues] = useState<any[]>([])
+    const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
 
-    const form = useForm<z.infer<typeof formSchema>>({
+    type FormData = z.infer<typeof formSchema>;
+    const form = useForm<FormData>({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             source_path: "",
@@ -106,11 +126,14 @@ export default function RedirectsPage() {
             }
             setDialogOpen(false)
             fetchRedirects()
-        } catch (error: any) {
+        } catch (error) {
             console.error(error)
-            if (error.body && error.body.errors) { // Handle API validation errors
-                error.body.errors.forEach((err: any) => {
-                    form.setError(err.field, { message: err.message })
+            const apiError = error as ApiError
+            if (apiError.body?.errors) {
+                apiError.body.errors.forEach((err) => {
+                    if (err.field) {
+                        form.setError(err.field as keyof FormData, { message: err.message })
+                    }
                 })
             } else {
                 toast.error("Operation failed")
@@ -175,7 +198,7 @@ export default function RedirectsPage() {
                         <ul className="list-disc pl-5 text-sm mt-1">
                             {validationIssues.map((issue, idx) => (
                                 <li key={idx}>
-                                    {issue.source_path}: {issue.errors.map((e: any) => e.message).join(", ")}
+                                    {issue.source_path}: {issue.errors.map((e) => e.message).join(", ")}
                                 </li>
                             ))}
                         </ul>

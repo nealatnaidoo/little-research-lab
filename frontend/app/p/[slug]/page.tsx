@@ -13,17 +13,12 @@ interface PageProps {
 
 // In Next.js 15+ params is async? Checking package.json -> next: 16.1.1
 // Yes, params should be awaited or treated as Promise in recent versions.
-// But as of some 14 versions it was direct.
-// Let's assume params is a Promise in Next 15+ often.
-// Wait, `params` prop in generic PageProps is usually just object.
-// But Next.js updated dynamic route props.
-// Let's safe bet: treat params as potentially async if compliant with latest next.
-// Actually standard simple: params: { slug: string }
-// Let's stick to standard signature for now.
+interface PageProps {
+    params: { slug: string };
+}
 
-export default async function PostPage({ params }: any) {
-    // Await params if needed (Next 15+)
-    const { slug } = await params;
+export default async function PostPage({ params }: PageProps) {
+    const { slug } = params;
 
     let post: ContentItemResponse | null = null;
     try {

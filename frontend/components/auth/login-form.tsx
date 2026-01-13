@@ -56,7 +56,7 @@ export function LoginForm() {
             router.push("/admin")
             router.refresh()
 
-        } catch (error: any) {
+        } catch (error) {
             console.error(error)
             toast.error("Login failed. Check your credentials.")
         } finally {

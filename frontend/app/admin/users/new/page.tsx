@@ -59,9 +59,10 @@ export default function NewUserPage() {
             });
             toast.success("User created")
             router.push("/admin/users")
-        } catch (e: any) {
+        } catch (e) {
             console.error(e)
-            toast.error(e.body?.detail || "Failed to create user")
+            const err = e as { body?: { detail?: string } }
+            toast.error(err.body?.detail || "Failed to create user")
         } finally {
             setIsLoading(false)
         }
