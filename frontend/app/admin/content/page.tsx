@@ -38,15 +38,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ContentService, type ContentItem } from "@/lib/api"
-import { SchedulerService } from "@/lib/api/services/SchedulerService"
+import { ContentService, type ContentItemResponse } from "@/lib/api"
+import { AdminScheduleService } from "@/lib/api"
 import { toast } from "sonner"
 
 type StatusFilter = "all" | "draft" | "scheduled" | "published"
 
 export default function ContentListPage() {
     const router = useRouter()
-    const [items, setItems] = useState<ContentItem[]>([])
+    const [items, setItems] = useState<ContentItemResponse[]>([])
     const [loading, setLoading] = useState(true)
     const [publishingId, setPublishingId] = useState<string | null>(null)
     const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
@@ -57,7 +57,7 @@ export default function ContentListPage() {
 
     const fetchContent = async () => {
         try {
-            const data = await ContentService.list()
+            const data = await ContentService.listContentApiContentGet()
             setItems(data)
         } catch (error) {
             console.error(error)
@@ -70,7 +70,7 @@ export default function ContentListPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this content?")) return
         try {
-            await ContentService.delete(id)
+            await ContentService.deleteContentApiContentItemIdDelete(id)
             toast.success("Content deleted")
             fetchContent()
         } catch (e) {
@@ -82,7 +82,7 @@ export default function ContentListPage() {
     const handlePublishNow = async (id: string) => {
         try {
             setPublishingId(id)
-            await SchedulerService.publishNow(id)
+            await AdminScheduleService.publishNowApiAdminSchedulePublishNowPost({ content_id: id })
             toast.success("Content published!")
             fetchContent()
         } catch (e) {
@@ -217,7 +217,7 @@ export default function ContentListPage() {
                                         <TableCell className="text-muted-foreground">
                                             {item.slug}
                                         </TableCell>
-                                        <TableCell>{getStatusBadge(item.status)}</TableCell>
+                                        <TableCell>{getStatusBadge(item.status || "draft")}</TableCell>
                                         <TableCell>
                                             {item.status === "scheduled" && item.publish_at ? (
                                                 <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">

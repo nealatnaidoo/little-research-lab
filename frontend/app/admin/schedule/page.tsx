@@ -6,7 +6,7 @@ import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lu
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { SchedulerService, type CalendarEvent } from "@/lib/api"
+import { AdminScheduleService, type CalendarEvent } from "@/lib/api"
 import { Badge } from "@/components/ui/badge"
 
 function getEventColor(status: string) {
@@ -42,7 +42,7 @@ export default function SchedulePage() {
                 setLoading(true)
                 setError(null)
                 // Fetch events for the visible range
-                const response = await SchedulerService.getCalendar(
+                const response = await AdminScheduleService.getCalendarApiAdminScheduleCalendarGet(
                     calendarStart.toISOString(),
                     calendarEnd.toISOString()
                 )

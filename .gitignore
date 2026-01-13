@@ -86,3 +86,40 @@ test_*.db
 
 # Fly.io local state (optional - remove if you want to track)
 # .fly/
+
+# Linting/type checking caches
+.mypy_cache/
+.ruff_cache/
+
+# Claude Code settings
+.claude/
+
+# Old Next.js builds
+**/.next.old*/
+
+# Playwright test pack
+little-research-lab-v3_playwright_pack/
+
+# Debug/seed scripts
+debug_assets.py
+seed_db.py
+
+# Internal documentation (not for public repo)
+LIVED_EXPERIENCE_EXECUTIVE_BRIEF.md
+RESTART_PROMPT.md
+
+# BA/Project artifacts (internal project management)
+*_spec.md
+*_tasklist.md
+*_evolution.md
+*_decisions.md
+*_quality_gates.md
+*_rules.yaml
+rules.yaml
+*_coding_agent_system_prompt.md
+
+# Archive directory (internal retrospectives)
+archive/
+
+# Manifests (internal)
+manifests/

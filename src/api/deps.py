@@ -17,19 +17,21 @@ from src.adapters.sqlite.repos import (
     SQLiteCollabRepo,
     SQLiteContentRepo,
     SQLiteLinkRepo,
+    SQLiteRedirectRepo,
     SQLiteSiteSettingsRepo,
     SQLiteUserRepo,
-    SQLiteRedirectRepo,
 )
 from src.api.auth_utils import decode_access_token
+
+# Atomic components are stateless, so we import them here for dependency injection.
+# Dependencies are injected as ports/repos/adapters.
+from src.components.links import LinkService
+from src.components.settings._impl import SettingsService
 from src.domain.blocks import BlockValidator
 from src.domain.entities import User
 from src.domain.policy import PolicyEngine
 from src.rules.loader import load_rules
 from src.rules.models import Rules
-
-# Atomic components are stateless, so we do not import services here.
-# Dependencies are injected as ports/repos/adapters.
 
 
 # --- Settings ---
@@ -79,6 +81,21 @@ def get_user_repo(settings: Settings = Depends(get_settings)) -> SQLiteUserRepo:
 
 def get_redirect_repo(settings: Settings = Depends(get_settings)) -> SQLiteRedirectRepo:
     return SQLiteRedirectRepo(settings.db_path)
+
+
+# --- Component Services ---
+def get_settings_service(
+    repo: SQLiteSiteSettingsRepo = Depends(get_site_settings_repo),
+) -> SettingsService:
+    """Get settings component service."""
+    return SettingsService(repo=repo)
+
+
+def get_link_service(
+    repo: SQLiteLinkRepo = Depends(get_link_repo),
+) -> LinkService:
+    """Get link component service."""
+    return LinkService(repo=repo)
 
 
 # --- Services ---

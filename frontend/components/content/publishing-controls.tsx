@@ -28,7 +28,6 @@ interface PublishingControlsProps {
     contentId: string
     currentStatus: string
     publishAt?: string | null
-    scheduledJobId?: string | null
     onPublishNow: () => Promise<void>
     onSchedule: (publishAt: string) => Promise<void>
     onUnschedule: () => Promise<void>
@@ -41,7 +40,6 @@ export function PublishingControls({
     contentId,
     currentStatus,
     publishAt,
-    scheduledJobId,
     onPublishNow,
     onSchedule,
     onUnschedule,

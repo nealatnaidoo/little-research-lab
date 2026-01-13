@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { SettingsService, type SettingsFormData } from "@/lib/api"
+import { AdminSettingsService, type SettingsUpdateRequest } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,14 +13,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function SettingsPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const form = useForm<SettingsFormData>()
+    const form = useForm<SettingsUpdateRequest>()
 
     // Social links helper state - for simplicity mapping specific known keys, 
     // but the API supports arbitrary keys. adhering to common ones for now.
     const socialKeys = ["twitter", "github", "linkedin"]
 
     useEffect(() => {
-        SettingsService.getSettings()
+        AdminSettingsService.getSettingsApiAdminSettingsGet()
             .then((data) => {
                 form.reset({
                     site_title: data.site_title,
@@ -37,10 +37,10 @@ export default function SettingsPage() {
             })
     }, [form.reset])
 
-    const onSubmit = async (data: SettingsFormData) => {
+    const onSubmit = async (data: SettingsUpdateRequest) => {
         setSaving(true)
         try {
-            await SettingsService.updateSettings(data)
+            await AdminSettingsService.updateSettingsApiAdminSettingsPut(data)
             toast.success("Settings saved")
         } catch (err) {
             console.error(err)

@@ -7,7 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { AnalyticsService, type DashboardResponse } from "@/lib/api"
+import { AdminAnalyticsService, type DashboardResponse } from "@/lib/api"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export default function AnalyticsPage() {
@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
                 const end = new Date()
                 const start = subDays(end, period === "7d" ? 7 : 30)
 
-                const response = await AnalyticsService.getDashboard(
+                const response = await AdminAnalyticsService.getDashboardApiAdminAnalyticsDashboardGet(
                     start.toISOString(),
                     end.toISOString(),
                     "day"

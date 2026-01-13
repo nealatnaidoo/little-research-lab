@@ -31,6 +31,7 @@ export const metadata: Metadata = {
 
 import { Toaster } from "@/components/ui/sonner"
 import { ApiConfig } from "@/components/api-config"
+import { ThemeProvider } from "@/components/providers/ThemeProvider"
 
 export default function RootLayout({
   children,
@@ -38,15 +39,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${sansFont.variable} ${monoFont.variable} ${arcadeFont.variable} antialiased`}
       >
-        <ApiConfig />
-        <div className="min-h-screen">
-          {children}
-        </div>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ApiConfig />
+          <div className="min-h-screen">
+            {children}
+          </div>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

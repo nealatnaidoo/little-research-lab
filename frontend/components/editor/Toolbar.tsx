@@ -58,7 +58,7 @@ export function Toolbar({ editor }: ToolbarProps) {
             const file = (e.target as HTMLInputElement).files?.[0]
             if (file) {
                 try {
-                    const response = await import("@/lib/api").then(m => m.AssetService.upload(file))
+                    const response = await import("@/lib/api").then(m => m.AssetsService.uploadAssetApiAssetsPost({ file }))
                     const url = `/assets/${response.id}/latest`
                     editor.chain().focus().setImage({ src: url }).run()
                 } catch (error) {

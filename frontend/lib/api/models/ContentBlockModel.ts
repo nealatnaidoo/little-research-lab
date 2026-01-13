@@ -6,7 +6,7 @@ export type ContentBlockModel = {
     id?: (string | null);
     block_type: ContentBlockModel.block_type;
     data_json: Record<string, any>;
-    position: number;
+    position?: (number | null);
 };
 export namespace ContentBlockModel {
     export enum block_type {

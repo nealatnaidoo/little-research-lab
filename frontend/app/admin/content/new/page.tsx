@@ -21,13 +21,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RichTextEditor } from "@/components/editor/RichTextEditor"
-import { ContentService } from "@/lib/api"
+import { ContentService, ContentBlockModel, ContentCreateRequest } from "@/lib/api"
 
 const formSchema = z.object({
     title: z.string().min(2, "Title must be at least 2 characters."),
     slug: z.string().min(2, "Slug must be at least 2 characters.")
         .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens."),
-    description: z.string().optional(),
+    summary: z.string().optional(),
     body: z.any().optional(), // JSON object from TipTap
 })
 
@@ -40,7 +40,7 @@ export default function NewContentPage() {
         defaultValues: {
             title: "",
             slug: "",
-            description: "",
+            summary: "",
             body: {},
         },
     })
@@ -48,12 +48,18 @@ export default function NewContentPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             setSaving(true)
-            await ContentService.create({
+            // Wrap TipTap JSON in blocks array
+            const blocks = values.body ? [{
+                block_type: ContentBlockModel.block_type.MARKDOWN,
+                data_json: { tiptap: values.body },
+                position: 0
+            }] : []
+            await ContentService.createContentApiContentPost({
                 title: values.title,
                 slug: values.slug,
-                description: values.description,
-                body: values.body,
-                type: "post",
+                summary: values.summary,
+                blocks: blocks,
+                type: ContentCreateRequest.type.POST,
             })
             toast.success("Content created")
             router.push("/admin/content")
@@ -122,7 +128,7 @@ export default function NewContentPage() {
 
                     <FormField
                         control={form.control}
-                        name="description"
+                        name="summary"
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Description</FormLabel>

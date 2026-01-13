@@ -8,10 +8,11 @@ import { request as __request } from '../core/request';
 export class DefaultService {
     /**
      * Health Check
+     * Health check endpoint.
      * @returns any Successful Response
      * @throws ApiError
      */
-    public static healthCheckHealthGet(): CancelablePromise<any> {
+    public static healthCheckHealthGet(): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/health',

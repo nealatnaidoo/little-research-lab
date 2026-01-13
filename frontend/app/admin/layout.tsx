@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     FileText,
     Image as ImageIcon,
+    Link2,
     Users,
     Settings,
     LogOut,
@@ -26,6 +27,7 @@ import {
     SidebarGroup,
     SidebarGroupLabel
 } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/layout/ThemeToggle"
 import { AuthService } from "@/lib/api"
 import { toast } from "sonner"
 
@@ -113,6 +115,14 @@ export default function AdminLayout({
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
+                                    <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/links")}>
+                                        <Link href="/admin/links">
+                                            <Link2 />
+                                            <span>Links</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
                                     <SidebarMenuButton asChild isActive={pathname.startsWith("/admin/users")}>
                                         <Link href="/admin/users">
                                             <Users />
@@ -152,6 +162,8 @@ export default function AdminLayout({
                 <main className="flex-1 overflow-auto">
                     <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
                         <SidebarTrigger />
+                        <div className="flex-1" />
+                        <ThemeToggle />
                     </header>
                     <div className="p-6">
                         {children}

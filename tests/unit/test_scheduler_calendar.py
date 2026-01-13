@@ -14,7 +14,6 @@ from src.components.scheduler._impl import create_publish_job
 from tests.unit.test_scheduler import (
     MockPublishJobRepo,
     MockTimePort,
-    MockPublisher,
     SchedulerConfig,
 )
 

@@ -1,7 +1,7 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
- 
+/* eslint-disable */
 import type { UserCreateRequest } from '../models/UserCreateRequest';
 import type { UserResponse } from '../models/UserResponse';
 import type { UserUpdateRequest } from '../models/UserUpdateRequest';
@@ -11,6 +11,7 @@ import { request as __request } from '../core/request';
 export class UsersService {
     /**
      * List Users
+     * List all users (admin only).
      * @returns UserResponse Successful Response
      * @throws ApiError
      */
@@ -22,6 +23,7 @@ export class UsersService {
     }
     /**
      * Create User
+     * Create a new user (admin only).
      * @param requestBody
      * @returns UserResponse Successful Response
      * @throws ApiError
@@ -41,6 +43,7 @@ export class UsersService {
     }
     /**
      * Update User
+     * Update a user (admin only).
      * @param userId
      * @param requestBody
      * @returns UserResponse Successful Response

@@ -43,7 +43,7 @@ import {
     FormMessage,
 } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
-import { RedirectService, type RedirectResponse } from "@/lib/api"
+import { AdminRedirectsService, type RedirectResponse } from "@/lib/api"
 
 // Types for validation issues from API
 interface ValidationError {
@@ -100,11 +100,11 @@ export default function RedirectsPage() {
     async function fetchRedirects() {
         setLoading(true)
         try {
-            const data = await RedirectService.list()
+            const data = await AdminRedirectsService.listRedirectsApiAdminRedirectsRedirectsGet()
             setRedirects(data.redirects)
 
             // Also validate
-            const validation = await RedirectService.validate()
+            const validation = await AdminRedirectsService.validateRedirectsApiAdminRedirectsRedirectsValidatePost()
             setValidationIssues(validation.issues || [])
 
         } catch (error) {
@@ -118,10 +118,10 @@ export default function RedirectsPage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             if (editingId) {
-                await RedirectService.update(editingId, values)
+                await AdminRedirectsService.updateRedirectApiAdminRedirectsRedirectsRedirectIdPut(editingId, values)
                 toast.success("Redirect updated")
             } else {
-                await RedirectService.create(values)
+                await AdminRedirectsService.createRedirectApiAdminRedirectsRedirectsPost(values)
                 toast.success("Redirect created")
             }
             setDialogOpen(false)
@@ -144,7 +144,7 @@ export default function RedirectsPage() {
     async function handleDelete(id: string) {
         if (!confirm("Are you sure?")) return
         try {
-            await RedirectService.delete(id)
+            await AdminRedirectsService.deleteRedirectApiAdminRedirectsRedirectsRedirectIdDelete(id)
             toast.success("Redirect deleted")
             fetchRedirects()
         } catch (error) {

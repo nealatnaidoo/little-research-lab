@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { PublicService } from "@/lib/api";
+import { PublicService, OpenAPI } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { OpenAPI } from "@/lib/api";
+import { PublicLayout } from "@/components/layout/PublicLayout";
 
 // Types for public content
 interface PublicPost {
@@ -26,38 +26,44 @@ export const dynamic = 'force-dynamic';
 OpenAPI.BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default async function Home() {
-  // Fetch public data
-  // Note: we might need try/catch if backend is down
+  // Fetch public data and settings
   let data = null;
+  let settings = null;
+
   try {
     data = await PublicService.getPublicHomeApiPublicHomeGet();
   } catch (e) {
     console.error("Failed to fetch home data", e);
   }
 
+  try {
+    settings = await PublicService.getPublicSettingsApiPublicSettingsGet();
+  } catch (e) {
+    console.error("Failed to fetch settings", e);
+  }
+
   const posts = data?.posts || [];
   const links = data?.links || [];
+  const siteTitle = settings?.site_title || "Little Research Lab";
+  const siteSubtitle = settings?.site_subtitle || "Experiments, thoughts, and digital gardening.";
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <header className="border-b bg-card">
+    <PublicLayout>
+      {/* Hero Section */}
+      <section className="border-b bg-card/50">
         <div className="container mx-auto px-4 py-12 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-primary">
-            Little Research Lab
+            {siteTitle}
           </h1>
-          <p className="mt-4 text-muted-foreground text-lg">
-            Experiments, thoughts, and digital gardening.
-          </p>
-          <div className="mt-6">
-            <Link href="/login" className="text-sm text-muted-foreground hover:underline">
-              Admin Login
-            </Link>
-          </div>
+          {siteSubtitle && (
+            <p className="mt-4 text-muted-foreground text-lg">
+              {siteSubtitle}
+            </p>
+          )}
         </div>
-      </header>
+      </section>
 
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="grid gap-8 md:grid-cols-[1fr_300px]">
           {/* Main Content: Posts */}
           <div className="space-y-6">
@@ -112,7 +118,7 @@ export default async function Home() {
             </div>
           </aside>
         </div>
-      </main>
-    </div>
+      </div>
+    </PublicLayout>
   );
 }

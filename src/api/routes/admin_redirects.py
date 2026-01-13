@@ -18,13 +18,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from src.api.deps import get_redirect_repo
 from src.components.redirects import (
     Redirect,
     RedirectConfig,
     RedirectService,
     RedirectValidationError,
 )
-from src.api.deps import get_redirect_repo
 
 router = APIRouter()
 

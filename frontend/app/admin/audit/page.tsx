@@ -28,7 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { AuditService, type AuditEntryResponse } from "@/lib/api"
+import { AdminAuditService, type AuditEntryResponse } from "@/lib/api"
 
 export default function AuditPage() {
     const [entries, setEntries] = useState<AuditEntryResponse[]>([])
@@ -48,12 +48,16 @@ export default function AuditPage() {
     async function fetchData() {
         setLoading(true)
         try {
-            const response = await AuditService.query({
-                offset: page * limit,
-                limit: limit,
-                action: actionFilter === "all" ? undefined : actionFilter,
-                entity_type: entityTypeFilter === "all" ? undefined : entityTypeFilter,
-            })
+            const response = await AdminAuditService.queryAuditLogsApiAdminAuditGet(
+                entityTypeFilter === "all" ? undefined : entityTypeFilter, // entityType
+                undefined, // entityId
+                undefined, // actorId
+                actionFilter === "all" ? undefined : actionFilter, // action
+                undefined, // start
+                undefined, // end
+                limit, // limit
+                page * limit // offset
+            )
             setEntries(response.items)
             setTotal(response.total)
         } catch (error) {

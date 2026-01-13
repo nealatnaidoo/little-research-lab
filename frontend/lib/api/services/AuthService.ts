@@ -10,6 +10,7 @@ import { request as __request } from '../core/request';
 export class AuthService {
     /**
      * Login For Access Token
+     * Authenticate user and return access token.
      * @param formData
      * @returns Token Successful Response
      * @throws ApiError
@@ -29,10 +30,11 @@ export class AuthService {
     }
     /**
      * Logout
-     * @returns any Successful Response
+     * Log out user by clearing cookie.
+     * @returns string Successful Response
      * @throws ApiError
      */
-    public static logoutApiAuthLogoutPost(): CancelablePromise<any> {
+    public static logoutApiAuthLogoutPost(): CancelablePromise<Record<string, string>> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/auth/logout',
@@ -40,13 +42,26 @@ export class AuthService {
     }
     /**
      * Read Users Me
+     * Get current user info.
      * @returns any Successful Response
      * @throws ApiError
      */
-    public static readUsersMeApiAuthMeGet(): CancelablePromise<any> {
+    public static readUsersMeApiAuthMeGet(): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/auth/me',
+        });
+    }
+    /**
+     * Dev Force Login
+     * Dev-only: Auto-login as admin for testing.
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static devForceLoginApiAuthDevLoginGet(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/auth/dev/login',
         });
     }
 }

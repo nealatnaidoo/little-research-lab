@@ -20,8 +20,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RichTextEditor } from "@/components/editor/RichTextEditor"
-import { ContentService } from "@/lib/api"
-import { SchedulerService } from "@/lib/api/services/SchedulerService"
+import { ContentService, ContentBlockModel, ContentTransitionRequest } from "@/lib/api"
+import { AdminScheduleService } from "@/lib/api"
 import { PublishingControls } from "@/components/content/publishing-controls"
 import {
     AlertDialog,
@@ -38,7 +38,7 @@ import {
 const formSchema = z.object({
     title: z.string().min(2, "Title must be at least 2 characters."),
     slug: z.string().min(2, "Slug must be at least 2 characters."),
-    description: z.string().optional(),
+    summary: z.string().optional(),
     body: z.any().optional(),
 })
 
@@ -52,30 +52,30 @@ export default function EditContentPage() {
     const [deleting, setDeleting] = useState(false)
     const [currentStatus, setCurrentStatus] = useState("draft")
     const [publishAt, setPublishAt] = useState<string | null>(null)
-    const [scheduledJobId, setScheduledJobId] = useState<string | null>(null)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             title: "",
             slug: "",
-            description: "",
+            summary: "",
             body: {},
         },
     })
 
     const fetchContent = useCallback(async () => {
         try {
-            const item = await ContentService.get(id)
+            const item = await ContentService.getContentApiContentItemIdGet(id)
+            // Extract TipTap JSON from blocks array
+            const bodyData = item.blocks?.[0]?.data_json?.tiptap || {}
             form.reset({
                 title: item.title,
                 slug: item.slug,
-                description: item.description || "",
-                body: item.body || {},
+                summary: item.summary || "",
+                body: bodyData,
             })
-            setCurrentStatus(item.status)
+            setCurrentStatus(item.status || "draft")
             setPublishAt(item.publish_at || null)
-            setScheduledJobId(item.scheduled_job_id || null)
         } catch (error) {
             console.error(error)
             toast.error("Failed to load content")
@@ -93,11 +93,17 @@ export default function EditContentPage() {
         const values = form.getValues()
         try {
             setSaving(true)
-            await ContentService.update(id, {
+            // Wrap TipTap JSON in blocks array
+            const blocks = values.body ? [{
+                block_type: ContentBlockModel.block_type.MARKDOWN,
+                data_json: { tiptap: values.body },
+                position: 0
+            }] : []
+            await ContentService.updateContentApiContentItemIdPut(id, {
                 title: values.title,
                 slug: values.slug,
-                description: values.description,
-                body: values.body,
+                summary: values.summary,
+                blocks: blocks,
             })
             if (showToast) {
                 toast.success("Content saved")
@@ -118,7 +124,7 @@ export default function EditContentPage() {
     async function onDelete() {
         try {
             setDeleting(true)
-            await ContentService.delete(id)
+            await ContentService.deleteContentApiContentItemIdDelete(id)
             toast.success("Content deleted")
             router.push("/admin/content")
         } catch (error) {
@@ -134,7 +140,7 @@ export default function EditContentPage() {
             // Save content first
             await saveContent(false)
             // Publish immediately
-            await SchedulerService.publishNow(id)
+            await AdminScheduleService.publishNowApiAdminSchedulePublishNowPost({ content_id: id })
             toast.success("Content published!")
             // Refresh content state
             await fetchContent()
@@ -150,9 +156,12 @@ export default function EditContentPage() {
             // Save content first
             await saveContent(false)
             // Schedule job for future
-            await SchedulerService.schedule(id, publishAtUtc)
+            await AdminScheduleService.scheduleContentApiAdminScheduleSchedulePost({
+                content_id: id,
+                publish_at_utc: publishAtUtc
+            })
             // Update content status to scheduled
-            await ContentService.transition(id, { status: "scheduled", publish_at: publishAtUtc })
+            await ContentService.transitionContentApiContentItemIdTransitionPost(id, { status: ContentTransitionRequest.status.SCHEDULED, publish_at: publishAtUtc })
             toast.success("Content scheduled for publication")
             // Refresh content state
             await fetchContent()
@@ -165,12 +174,8 @@ export default function EditContentPage() {
 
     async function handleUnschedule() {
         try {
-            // Cancel the scheduled job if it exists
-            if (scheduledJobId) {
-                await SchedulerService.unschedule(scheduledJobId)
-            }
             // Transition content back to draft
-            await ContentService.transition(id, { status: "draft" })
+            await ContentService.transitionContentApiContentItemIdTransitionPost(id, { status: ContentTransitionRequest.status.DRAFT })
             toast.success("Publication cancelled")
             // Refresh content state
             await fetchContent()
@@ -184,7 +189,7 @@ export default function EditContentPage() {
     async function handleUnpublish() {
         try {
             // Transition back to draft
-            await ContentService.transition(id, { status: "draft" })
+            await ContentService.transitionContentApiContentItemIdTransitionPost(id, { status: ContentTransitionRequest.status.DRAFT })
             toast.success("Content unpublished")
             // Refresh content state
             await fetchContent()
@@ -274,7 +279,7 @@ export default function EditContentPage() {
 
                             <FormField
                                 control={form.control}
-                                name="description"
+                                name="summary"
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Description</FormLabel>
@@ -312,7 +317,6 @@ export default function EditContentPage() {
                         contentId={id}
                         currentStatus={currentStatus}
                         publishAt={publishAt}
-                        scheduledJobId={scheduledJobId}
                         onPublishNow={handlePublishNow}
                         onSchedule={handleSchedule}
                         onUnschedule={handleUnschedule}
