@@ -23,6 +23,40 @@ Protocol:
 (none)
 
 ## Resolved
+- EV-0003
+  - date: 2026-01-13
+  - trigger: ops / frontend integration issues
+  - description: |
+      Multiple frontend issues discovered during content publishing workflow:
+      1. TipTap editor content not rendering on public article pages
+      2. Toolbar formatting buttons (Toggle components) not responding to clicks
+      3. Homepage showing stale/deleted content due to static caching
+      4. Published content missing paragraph spacing (no typography plugin)
+      5. Content format mismatch between frontend editor and backend storage
+  - impact:
+    - affected_spec_ids: E6 (content management), UI specs
+    - affected_tasks: Content publishing, rich text editing
+  - proposed_change: |
+      1. Install @tiptap/html for server-side HTML generation
+      2. Replace Toggle components with Button components for reliable click handling
+      3. Add `export const dynamic = 'force-dynamic'` to homepage
+      4. Install @tailwindcss/typography plugin with proper prose styles
+      5. Add data transformation layer in ContentService for body↔blocks format
+  - decision_refs: none
+  - status: resolved
+  - resolution_notes: |
+      All 5 issues fixed and deployed:
+      - Added @tiptap/html package, updated BlockRenderer to use generateHTML()
+      - Replaced Radix Toggle with shadcn Button in Toolbar.tsx (more reliable onClick)
+      - Added force-dynamic export to app/page.tsx to prevent Next.js static caching
+      - Installed @tailwindcss/typography, added @plugin directive to globals.css
+      - ContentService now transforms body↔blocks with bodyToBlocks/blocksToBody helpers
+      Quality gates: Build passes, content publishes and displays correctly
+  - evidence: |
+      - Commits: 5e0d426, 2ff655b, f18ce99, 95df44a, 31c1d53
+      - Live site: https://little-research-lab-web.fly.dev/
+      - Article rendering verified at /p/building-with-agents
+
 - EV-0002
   - date: 2026-01-12
   - trigger: AC-TA mismatch / incomplete migration / split-brain architecture
