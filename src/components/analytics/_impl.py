@@ -83,6 +83,9 @@ class IngestionConfig:
                 "utm_content",
                 "utm_term",
                 "ua_class",
+                # Engagement tracking fields (E14)
+                "time_on_page",
+                "scroll_depth",
             }
         ),
     )

@@ -46,6 +46,7 @@ from src.api.routes import (  # noqa: E402
     admin_resources,
     admin_schedule,
     admin_settings,
+    analytics_ingest,
     assets,
     auth,
     content,
@@ -76,6 +77,7 @@ app.include_router(
 )
 app.include_router(public_ssr.router, prefix="", tags=["SSR"])
 app.include_router(public_assets.router, prefix="/assets", tags=["Assets Public"])
+app.include_router(analytics_ingest.router, prefix="/a", tags=["Analytics Ingest"])
 
 
 # CORS (Allow Frontend)

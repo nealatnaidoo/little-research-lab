@@ -492,8 +492,8 @@ def get_dashboard(
             start_date=start_dt.date(),
             end_date=end_dt.date(),
         )
-        total_sessions = engagement_totals.total_sessions
-        engaged_sessions = engagement_totals.engaged_sessions
+        total_sessions = engagement_totals.get("total_sessions", 0) or 0
+        engaged_sessions = engagement_totals.get("engaged_sessions", 0) or 0
         engagement_rate = engaged_sessions / total_sessions if total_sessions > 0 else 0.0
         engagement_data = EngagementTotalsResponse(
             total_sessions=total_sessions,
@@ -583,8 +583,8 @@ def get_engagement_totals(
         content_id=content_uuid,
     )
 
-    total_sessions = totals.total_sessions
-    engaged_sessions = totals.engaged_sessions
+    total_sessions = totals.get("total_sessions", 0) or 0
+    engaged_sessions = totals.get("engaged_sessions", 0) or 0
     engagement_rate = engaged_sessions / total_sessions if total_sessions > 0 else 0.0
 
     return EngagementTotalsResponse(

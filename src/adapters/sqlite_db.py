@@ -1404,7 +1404,7 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
                 params.append(start_date.strftime("%Y-%m-%d"))
 
             if end_date:
-                query += " AND date < ?"
+                query += " AND date <= ?"
                 params.append(end_date.strftime("%Y-%m-%d"))
 
             if engaged_only:
@@ -1443,7 +1443,7 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
                 params.append(start_date.strftime("%Y-%m-%d"))
 
             if end_date:
-                query += " AND date < ?"
+                query += " AND date <= ?"
                 params.append(end_date.strftime("%Y-%m-%d"))
 
             query += f" GROUP BY {bucket_col} ORDER BY {bucket_col}"
@@ -1477,7 +1477,7 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
                 params.append(start_date.strftime("%Y-%m-%d"))
 
             if end_date:
-                query += " AND date < ?"
+                query += " AND date <= ?"
                 params.append(end_date.strftime("%Y-%m-%d"))
 
             query += " GROUP BY content_id ORDER BY engaged_sessions DESC LIMIT ?"
