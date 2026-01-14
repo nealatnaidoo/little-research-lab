@@ -94,6 +94,9 @@ test_*.db
 # Claude Code settings
 .claude/
 
+# Playwright MCP
+.playwright-mcp/
+
 # Old Next.js builds
 **/.next.old*/
 
