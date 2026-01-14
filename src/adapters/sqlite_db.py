@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -447,7 +447,7 @@ class SQLiteAnalyticsAggregateRepo(SQLiteRepoBase):
             # Create new bucket
             from uuid import uuid4
 
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             bucket = AnalyticsEventAggregate(
                 id=uuid4(),
                 bucket_type=bucket_type,  # type: ignore[arg-type]
@@ -518,7 +518,7 @@ class SQLiteAnalyticsAggregateRepo(SQLiteRepoBase):
     ) -> None:
         conn = self._get_conn()
         try:
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(UTC).isoformat()
             conn.execute(
                 """
                 UPDATE analytics_aggregates
@@ -1277,7 +1277,7 @@ class SQLiteUserRepoAdapter(SQLiteRepoBase):
                 conn.execute(
                     """INSERT INTO role_assignments
                     (id, user_id, role, created_at) VALUES (?, ?, ?, ?)""",
-                    (str(uuid4()), str(user.id), role, datetime.utcnow().isoformat()),
+                    (str(uuid4()), str(user.id), role, datetime.now(UTC).isoformat()),
                 )
 
             if self._should_close():

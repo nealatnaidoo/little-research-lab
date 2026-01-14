@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from jose import jwt
@@ -22,12 +22,26 @@ def get_password_hash(password: str) -> str:
     return result
 
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any],
+    expires_delta: timedelta | None = None,
+    now_utc: datetime | None = None,
+) -> str:
+    """
+    Create a JWT access token.
+
+    Args:
+        data: Claims to encode in the token
+        expires_delta: Optional custom expiration delta
+        now_utc: Current UTC time (for testing/determinism). Defaults to datetime.now(UTC).
+    """
     to_encode = data.copy()
+    current_time = now_utc if now_utc is not None else datetime.now(UTC)
+
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = current_time + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = current_time + timedelta(minutes=15)
 
     to_encode.update({"exp": expire})
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

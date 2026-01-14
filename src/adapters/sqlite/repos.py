@@ -1,7 +1,7 @@
 import builtins
 import json
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -488,7 +488,7 @@ class SQLiteUserRepo:
                 conn.execute(
                     "INSERT INTO role_assignments (id, user_id, role, created_at) "
                     "VALUES (?, ?, ?, ?)",
-                    (str(uuid4()), str(user.id), role, datetime.now().isoformat()),
+                    (str(uuid4()), str(user.id), role, datetime.now(UTC).isoformat()),
                 )
 
             conn.commit()
@@ -597,7 +597,7 @@ class SQLiteInviteRepo:
     def get_pending(self) -> list[Invite]:
         conn = self._get_conn()
         try:
-            now_iso = datetime.utcnow().isoformat()
+            now_iso = datetime.now(UTC).isoformat()
             # Active = not redeemed AND not expired
             rows = conn.execute(
                 "SELECT * FROM invites WHERE redeemed_at IS NULL "
@@ -859,7 +859,7 @@ class SQLitePublishJobRepo:
                     job.error_message,
                     job.claimed_by,
                     job.created_at.isoformat(),
-                    job.updated_at.isoformat() if job.updated_at else datetime.utcnow().isoformat(),
+                    job.updated_at.isoformat() if job.updated_at else datetime.now(UTC).isoformat(),
                 ),
             )
             conn.commit()

@@ -9,6 +9,7 @@ from ._impl import (
     SchedulerConfig,
     SchedulerError,
     SchedulerService,
+    create_publish_job,
 )
 from .component import (
     run,
@@ -67,4 +68,5 @@ __all__ = [
     "SchedulerConfig",
     "SchedulerError",
     "SchedulerService",
+    "create_publish_job",
 ]

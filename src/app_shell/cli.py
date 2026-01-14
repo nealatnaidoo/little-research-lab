@@ -2,7 +2,7 @@ import argparse
 import logging
 import shutil
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.rules.loader import load_rules
@@ -88,7 +88,7 @@ def handle_backup(rules_path: Path) -> None:
     backup_dir = Path(backup_cfg.backup_dir_name)
     backup_dir.mkdir(exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     zip_name = backup_dir / f"backup_{timestamp}"
 
     # We want to zip 'lrl.db' and 'filestore' (or whatever is in 'include')

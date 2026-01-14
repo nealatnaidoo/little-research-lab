@@ -1,7 +1,7 @@
 import hashlib
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ def get_file_hash(path: Path) -> str:
 
 
 def generate_manifest(root: Path = SRC_ROOT) -> dict[str, Any]:
-    manifest: dict[str, Any] = {"timestamp": datetime.now().isoformat(), "modules": {}}
+    manifest: dict[str, Any] = {"timestamp": datetime.now(UTC).isoformat(), "modules": {}}
 
     if not root.exists():
         return manifest

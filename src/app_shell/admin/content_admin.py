@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import flet as ft
 
@@ -171,7 +171,7 @@ def ContentEditContent(
             nonlocal item
             if not title_field.value:
                 raise ValueError("Title is required")
-            now = datetime.now()
+            now = datetime.now(UTC)
 
             if is_new:
                 if not state.current_user:

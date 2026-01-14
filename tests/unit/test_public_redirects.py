@@ -151,7 +151,9 @@ class TestRedirectApplication:
         assert data["target"] == "/other"
         assert data["status_code"] == 302
 
-    def test_no_redirect_returns_404(self, client: TestClient, test_repo: InMemoryRedirectRepo) -> None:
+    def test_no_redirect_returns_404(
+        self, client: TestClient, test_repo: InMemoryRedirectRepo
+    ) -> None:
         """Non-redirected path returns 404."""
         response = client.get("/resolve?path=/nonexistent", follow_redirects=False)
         assert response.status_code == 404
@@ -206,7 +208,9 @@ class TestQueryParamPreservation:
         # UTM preservation happens at the application level, not in resolve endpoint
         # The resolve endpoint just returns the target
 
-    def test_preserve_all_utm_params(self, client: TestClient, test_repo: InMemoryRedirectRepo) -> None:
+    def test_preserve_all_utm_params(
+        self, client: TestClient, test_repo: InMemoryRedirectRepo
+    ) -> None:
         """All UTM params are preserved."""
         create_redirect(test_repo, "/promo", "/sale")
 
@@ -281,7 +285,9 @@ class TestPreserveQueryParams:
 class TestResolveRedirect:
     """Test resolve_redirect function."""
 
-    def test_resolve_simple(self, test_repo: InMemoryRedirectRepo, test_service: RedirectService) -> None:
+    def test_resolve_simple(
+        self, test_repo: InMemoryRedirectRepo, test_service: RedirectService
+    ) -> None:
         """Resolve simple redirect."""
         create_redirect(test_repo, "/old", "/new")
 
@@ -292,7 +298,9 @@ class TestResolveRedirect:
         assert target == "/new"
         assert status == 301
 
-    def test_resolve_with_query(self, test_repo: InMemoryRedirectRepo, test_service: RedirectService) -> None:
+    def test_resolve_with_query(
+        self, test_repo: InMemoryRedirectRepo, test_service: RedirectService
+    ) -> None:
         """Resolve with query string preservation."""
         create_redirect(test_repo, "/old", "/new")
 
@@ -302,7 +310,9 @@ class TestResolveRedirect:
         target, status = result
         assert "utm_source=test" in target
 
-    def test_resolve_not_found(self, test_repo: InMemoryRedirectRepo, test_service: RedirectService) -> None:
+    def test_resolve_not_found(
+        self, test_repo: InMemoryRedirectRepo, test_service: RedirectService
+    ) -> None:
         """Non-existent path returns None."""
         result = resolve_redirect("/nonexistent", service=test_service)
         assert result is None
@@ -314,7 +324,9 @@ class TestResolveRedirect:
 class TestEdgeCases:
     """Test edge cases."""
 
-    def test_trailing_slash_normalized(self, client: TestClient, test_repo: InMemoryRedirectRepo) -> None:
+    def test_trailing_slash_normalized(
+        self, client: TestClient, test_repo: InMemoryRedirectRepo
+    ) -> None:
         """Trailing slashes are normalized."""
         create_redirect(test_repo, "/old", "/new")
 

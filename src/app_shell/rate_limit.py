@@ -1,17 +1,38 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from threading import Lock
+from typing import Protocol
 
 from src.rules.models import RateLimitRules
 
 
+class TimePort(Protocol):
+    """Protocol for time operations (enables testing with deterministic time)."""
+
+    def now(self) -> datetime:
+        """Return current UTC time."""
+        ...
+
+
+class SystemTimeAdapter:
+    """Production time adapter using system clock."""
+
+    def now(self) -> datetime:
+        return datetime.now(UTC)
+
+
 class RateLimiter:
-    def __init__(self, rules: RateLimitRules):
+    def __init__(
+        self,
+        rules: RateLimitRules,
+        time_port: TimePort | None = None,
+    ):
         self.rules = rules
+        self._time = time_port if time_port is not None else SystemTimeAdapter()
         self._history: dict[str, list[datetime]] = {}
         self._lock = Lock()
 
     def _cleanup(self, key: str, window: int) -> None:
-        now = datetime.now()
+        now = self._time.now()
         cutoff = now - timedelta(seconds=window)
         if key in self._history:
             self._history[key] = [t for t in self._history[key] if t > cutoff]
@@ -36,7 +57,7 @@ class RateLimiter:
 
             if key not in self._history:
                 self._history[key] = []
-            self._history[key].append(datetime.now())
+            self._history[key].append(self._time.now())
             return True
 
     def check_login(self, ip: str) -> bool:

@@ -78,23 +78,23 @@ class TestProjectStructure:
             assert init_file.is_file(), f"Missing __init__.py in {pkg}"
 
 
-class TestV3ArtifactsPresent:
-    """Verify v3 BA artifacts are present."""
+class TestV4ArtifactsPresent:
+    """Verify v4 BA artifacts are present."""
 
     def test_spec_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_spec.md").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_spec.md").is_file()
 
     def test_tasklist_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_tasklist.md").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_tasklist.md").is_file()
 
     def test_rules_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_rules.yaml").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_rules.yaml").is_file()
 
     def test_quality_gates_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_quality_gates.md").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_quality_gates.md").is_file()
 
     def test_evolution_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_evolution.md").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_evolution.md").is_file()
 
     def test_decisions_exists(self) -> None:
-        assert (PROJECT_ROOT / "little-research-lab-v3_decisions.md").is_file()
+        assert (PROJECT_ROOT / "creator-publisher-v4_decisions.md").is_file()

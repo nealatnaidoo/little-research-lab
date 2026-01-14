@@ -1,0 +1,1 @@
+"""Collab component tests."""

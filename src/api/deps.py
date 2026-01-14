@@ -26,7 +26,7 @@ from src.api.auth_utils import decode_access_token
 # Atomic components are stateless, so we import them here for dependency injection.
 # Dependencies are injected as ports/repos/adapters.
 from src.components.links import LinkService
-from src.components.settings._impl import SettingsService
+from src.components.settings import SettingsService
 from src.domain.blocks import BlockValidator
 from src.domain.entities import User
 from src.domain.policy import PolicyEngine

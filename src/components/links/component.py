@@ -8,75 +8,18 @@ Shell Layer - handles I/O and error conversion.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from uuid import UUID
+from typing import Any
 
-from src.domain.entities import ContentVisibility, LinkItem, LinkStatus
-
-from ._impl import LinkService, LinkValidationError
-
-# --- Component Models (Shell Layer) ---
-
-
-@dataclass
-class LinkOperationOutput:
-    """Output from link operation."""
-
-    link: LinkItem | None
-    errors: list[LinkValidationError]
-    success: bool
-
-
-@dataclass
-class LinkListOutput:
-    """Output from list operation."""
-
-    links: list[LinkItem]
-    total: int
-
-
-@dataclass
-class CreateLinkInput:
-    """Input for creating a link."""
-
-    title: str
-    slug: str
-    url: str
-    icon: str | None = None
-    status: LinkStatus = "active"
-    position: int = 0
-    visibility: ContentVisibility = "public"
-    group_id: UUID | None = None
-
-
-@dataclass
-class UpdateLinkInput:
-    """Input for updating a link."""
-
-    link_id: UUID
-    title: str | None = None
-    slug: str | None = None
-    url: str | None = None
-    icon: str | None = None
-    status: LinkStatus | None = None
-    position: int | None = None
-    visibility: ContentVisibility | None = None
-    group_id: UUID | None = None
-
-
-@dataclass
-class DeleteLinkInput:
-    """Input for deleting a link."""
-
-    link_id: UUID
-
-
-@dataclass
-class GetLinkInput:
-    """Input for getting a link."""
-
-    link_id: UUID
-
+from ._impl import LinkService
+from .models import (
+    CreateLinkInput,
+    DeleteLinkInput,
+    GetLinkInput,
+    LinkListOutput,
+    LinkOperationOutput,
+    LinkValidationError,
+    UpdateLinkInput,
+)
 
 # --- Shell Layer Functions ---
 
@@ -99,7 +42,7 @@ def run_create(
 
     return LinkOperationOutput(
         link=link,
-        errors=errors,
+        errors=tuple(errors),
         success=link is not None,
     )
 
@@ -110,7 +53,7 @@ def run_update(
 ) -> LinkOperationOutput:
     """Update an existing link."""
     # Build updates dict from non-None fields
-    updates = {}
+    updates: dict[str, Any] = {}
     if input_data.title is not None:
         updates["title"] = input_data.title
     if input_data.slug is not None:
@@ -132,7 +75,7 @@ def run_update(
 
     return LinkOperationOutput(
         link=link,
-        errors=errors,
+        errors=tuple(errors),
         success=link is not None,
     )
 
@@ -146,7 +89,7 @@ def run_delete(
 
     return LinkOperationOutput(
         link=None,
-        errors=errors,
+        errors=tuple(errors),
         success=success,
     )
 
@@ -161,18 +104,18 @@ def run_get(
     if link is None:
         return LinkOperationOutput(
             link=None,
-            errors=[
+            errors=(
                 LinkValidationError(
                     code="link_not_found",
                     message=f"Link with ID {input_data.link_id} not found",
-                )
-            ],
+                ),
+            ),
             success=False,
         )
 
     return LinkOperationOutput(
         link=link,
-        errors=[],
+        errors=(),
         success=True,
     )
 
@@ -181,6 +124,6 @@ def run_list(service: LinkService) -> LinkListOutput:
     """List all links."""
     links = service.get_all()
     return LinkListOutput(
-        links=links,
+        links=tuple(links),
         total=len(links),
     )

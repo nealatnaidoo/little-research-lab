@@ -9,8 +9,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.components.scheduler import SchedulerService
-from src.components.scheduler._impl import create_publish_job
+from src.components.scheduler import SchedulerService, create_publish_job
 from tests.unit.test_scheduler import (
     MockPublishJobRepo,
     MockTimePort,
@@ -86,15 +85,12 @@ class TestCalendarQuery:
         for status in statuses:
             job = create_publish_job(uuid4(), base_time)
             # Manually set status since create makes them "queued"
-            # We need to hack the frozen dataclass or just use the repo's internal dict since it's a mock
-            # But the repo mock saves the job passed in. 
-            # In real code we can't mutate frozen, but for test setup of mock repo we can just recreate or mock behavior.
-            # However implementation uses replace() often.
-            # Let's verify `create_publish_job` returns mutable? No, dataclass(frozen=True).
-            # The test_scheduler.py uses `job.status = "running"` which implies it might NOT be frozen in the implementation being tested?
-            # Let's check _impl.py lines 27-28 "from src.core.entities import PublishJob".
-            # Check src/core/entities.py... step 1162 says `frozen=False` was explicitly set!
-            # So mutation is allowed.
+            # We need to hack the frozen dataclass or use the repo's internal dict
+            # since it's a mock. The repo mock saves the job passed in.
+            # In real code we can't mutate frozen, but for test setup we can
+            # recreate or mock behavior. Implementation uses replace() often.
+            # Note: src/core/entities.py has `frozen=False` explicitly set,
+            # so mutation is allowed.
             job.status = status
             repo.save(job)
 

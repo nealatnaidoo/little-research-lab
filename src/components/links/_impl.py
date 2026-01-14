@@ -8,42 +8,13 @@ Functional Core - pure business logic.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Protocol
+from typing import Any
 from uuid import UUID, uuid4
 
 from src.domain.entities import ContentVisibility, LinkItem, LinkStatus
 
-# --- Validation Errors ---
-
-
-@dataclass
-class LinkValidationError:
-    """Link validation error."""
-
-    code: str
-    message: str
-    field: str | None = None
-
-
-# --- Repository Protocol ---
-
-
-class LinkRepoPort(Protocol):
-    """Repository interface for links."""
-
-    def save(self, link: LinkItem) -> LinkItem:
-        """Save or update link."""
-        ...
-
-    def get_all(self) -> list[LinkItem]:
-        """List all links."""
-        ...
-
-    def delete(self, link_id: UUID) -> None:
-        """Delete link."""
-        ...
-
+from .models import LinkValidationError
+from .ports import LinkRepoPort
 
 # --- Validation Functions ---
 
@@ -189,7 +160,7 @@ class LinkService:
     def update(
         self,
         link_id: UUID,
-        updates: dict[str, any],
+        updates: dict[str, Any],
     ) -> tuple[LinkItem | None, list[LinkValidationError]]:
         """
         Update an existing link.
@@ -234,13 +205,13 @@ class LinkService:
 
         # Apply updates
         if "title" in updates:
-            link.title = updates["title"].strip()
+            link.title = str(updates["title"]).strip()
         if "slug" in updates:
-            link.slug = updates["slug"].strip()
+            link.slug = str(updates["slug"]).strip()
         if "url" in updates:
-            link.url = updates["url"].strip()
+            link.url = str(updates["url"]).strip()
         if "icon" in updates:
-            link.icon = updates["icon"].strip() if updates["icon"] else None
+            link.icon = str(updates["icon"]).strip() if updates["icon"] else None
         if "status" in updates:
             link.status = updates["status"]
         if "position" in updates:

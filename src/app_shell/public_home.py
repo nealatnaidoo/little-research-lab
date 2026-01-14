@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 import flet as ft
 
@@ -10,11 +10,12 @@ from src.ui.state import AppState
 def PublicHomeContent(page: ft.Page, ctx: ServiceContext, state: AppState) -> ft.Control:
     # 1. Fetch Data
     all_items = ctx.content_service.repo.list_items(filters={})
+    now = datetime.now(UTC)
     published_items = [
         item
         for item in all_items
         if item.status == "published"
-        and (item.published_at is None or item.published_at <= datetime.now())
+        and (item.published_at is None or item.published_at <= now)
     ]
     published_items.sort(key=lambda x: x.published_at or datetime.min, reverse=True)
 
