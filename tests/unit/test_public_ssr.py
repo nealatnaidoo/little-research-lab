@@ -534,9 +534,9 @@ class TestResourcePDFSSR:
             filename="report.pdf",
         )
 
-        # Download section always visible below embed
-        assert "pdf-download-section" in html
-        assert "Download: report.pdf" in html
+        # Sticky download bar always visible below embed
+        assert "pdf-download-bar" in html
+        assert "report.pdf" in html  # Filename displayed in download bar
 
     def test_resource_pdf_embed_escapes_special_chars(self) -> None:
         """PDF embed HTML escapes special characters for security."""

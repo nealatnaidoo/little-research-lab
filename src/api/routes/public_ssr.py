@@ -21,7 +21,13 @@ from src.api.deps import (
     get_version_repo,
     require_published,
 )
-from src.components.C2_PublicTemplates import SitemapEntry, filter_sitemap_entries
+from src.components.C2_PublicTemplates import (
+    SitemapEntry,
+    filter_sitemap_entries,
+    format_file_size,
+    format_page_count,
+    supports_pdf_embed,
+)
 from src.components.render import PageMetadata, RenderService, create_render_service
 from src.components.settings import SettingsService
 
@@ -273,23 +279,56 @@ def _render_pdf_embed_html(
     pdf_url: str,
     download_url: str,
     filename: str,
+    user_agent: str | None = None,
+    file_size_bytes: int | None = None,
+    page_count: int | None = None,
 ) -> str:
     """
-    Render PDF embed HTML with fallback for iOS/Safari (TA-0017).
+    Render PDF embed HTML with fallback for iOS/Safari (TA-0017, TA-E2.2-01).
+
+    Uses user-agent detection to provide optimal UX:
+    - Desktop browsers: Inline PDF embed via <object> tag
+    - iOS/Safari/in-app browsers: Direct links (no embed attempt)
+
+    Args:
+        pdf_url: URL for PDF viewing
+        download_url: URL for PDF download (with ?download=1)
+        filename: Display filename for download
+        user_agent: Request user-agent for browser detection
+        file_size_bytes: File size in bytes (for display)
+        page_count: Number of pages (for display, if available)
 
     Returns HTML with:
-    - PDF embed/object for desktop browsers
-    - Fallback links for iOS/Safari (Open in new tab + Download)
+    - PDF embed/object for supported browsers
+    - Fallback links for unsupported browsers
+    - File details (size, pages)
+    - Sticky download bar
     """
     escaped_url = _escape_html(pdf_url)
     escaped_download = _escape_html(download_url)
     escaped_filename = _escape_html(filename)
 
-    return f"""
-    <div class="pdf-container">
-        <!-- PDF embed for desktop browsers -->
+    # Format file details
+    file_size_display = format_file_size(file_size_bytes) if file_size_bytes else None
+    page_count_display = format_page_count(page_count) if page_count else None
+
+    # Build file details string
+    details_parts = []
+    if file_size_display:
+        details_parts.append(file_size_display)
+    if page_count_display:
+        details_parts.append(page_count_display)
+    file_details = " · ".join(details_parts) if details_parts else ""
+
+    # Check browser support for PDF embed (TA-E2.2-01)
+    can_embed, fallback_reason = supports_pdf_embed(user_agent)
+
+    if can_embed:
+        # Desktop browsers: Show inline embed with fallback inside <object>
+        embed_html = f"""
         <object data="{escaped_url}" type="application/pdf"
-                width="100%" height="600px" class="pdf-embed">
+                width="100%" height="600px" class="pdf-embed"
+                aria-label="PDF viewer for {escaped_filename}">
             <!-- Fallback for browsers that don't support PDF embed -->
             <div class="pdf-fallback">
                 <p>Your browser doesn't support embedded PDFs.</p>
@@ -305,12 +344,53 @@ def _render_pdf_embed_html(
                 </div>
             </div>
         </object>
-        <!-- Always show download link below embed -->
-        <div class="pdf-download-section">
-            <a href="{escaped_download}" download="{escaped_filename}"
-               class="download-link">
-                Download: {escaped_filename}
-            </a>
+        """
+    else:
+        # iOS/Safari/in-app browsers: Show fallback directly (no embed attempt)
+        fallback_msg = _escape_html(fallback_reason) if fallback_reason else ""
+        embed_html = f"""
+        <div class="pdf-fallback pdf-fallback-direct">
+            <p class="fallback-message">
+                {fallback_msg if fallback_msg else "PDF preview not available on this device."}
+            </p>
+            <div class="pdf-actions">
+                <a href="{escaped_url}" target="_blank"
+                   rel="noopener noreferrer" class="btn btn-primary">
+                    Open PDF in New Tab
+                </a>
+                <a href="{escaped_download}" download="{escaped_filename}"
+                   class="btn btn-secondary">
+                    Download PDF
+                </a>
+            </div>
+        </div>
+        """
+
+    # Build sticky download bar with file details
+    if file_details:
+        details_html = f'<span class="file-details">{_escape_html(file_details)}</span>'
+    else:
+        details_html = ""
+
+    return f"""
+    <div class="pdf-container">
+        {embed_html}
+        <!-- Sticky download bar with file details -->
+        <div class="pdf-download-bar">
+            <div class="download-info">
+                <span class="filename">{escaped_filename}</span>
+                {details_html}
+            </div>
+            <div class="download-actions">
+                <a href="{escaped_url}" target="_blank"
+                   rel="noopener noreferrer" class="btn btn-link">
+                    Open
+                </a>
+                <a href="{escaped_download}" download="{escaped_filename}"
+                   class="btn btn-download">
+                    Download
+                </a>
+            </div>
         </div>
     </div>
     """
@@ -362,11 +442,25 @@ def ssr_resource_pdf(
     # or from pdf_asset_id if this is a ResourcePDF entity
     pdf_asset_id = getattr(content, "pdf_asset_id", None)
 
+    # Get file details from asset version
+    file_size_bytes: int | None = None
+    page_count: int | None = None
+
     # Construct PDF URLs
     if pdf_asset_id:
         # Use /latest route for the asset (allows admin to rollback)
         pdf_url = f"{base_url}/api/public/assets/{pdf_asset_id}/latest"
         download_url = f"{pdf_url}?download=1"
+
+        # Try to get file details from the latest version
+        try:
+            latest_version = version_repo.get_latest(pdf_asset_id)
+            if latest_version:
+                file_size_bytes = getattr(latest_version, "size_bytes", None)
+                page_count = getattr(latest_version, "page_count", None)
+        except Exception:
+            # File details are optional - continue without them
+            pass
     else:
         # Fallback: no PDF attached yet (shouldn't happen for published)
         pdf_url = ""
@@ -376,6 +470,9 @@ def ssr_resource_pdf(
     filename = getattr(content, "download_filename", None)
     if not filename:
         filename = f"{slug}.pdf"
+
+    # Get user-agent for browser detection (TA-E2.2-01)
+    user_agent = request.headers.get("user-agent")
 
     # Build body content
     body_parts = [
@@ -387,7 +484,16 @@ def ssr_resource_pdf(
         body_parts.append(f"<p class='summary'>{_escape_html(content.summary)}</p>")
 
     if pdf_url:
-        body_parts.append(_render_pdf_embed_html(pdf_url, download_url, filename))
+        body_parts.append(
+            _render_pdf_embed_html(
+                pdf_url,
+                download_url,
+                filename,
+                user_agent=user_agent,
+                file_size_bytes=file_size_bytes,
+                page_count=page_count,
+            )
+        )
     else:
         body_parts.append("<p class='no-pdf'>PDF not available. Please check back later.</p>")
 
