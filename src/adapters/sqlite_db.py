@@ -1311,3 +1311,187 @@ class SQLiteUserRepoAdapter(SQLiteRepoBase):
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )
+
+
+# -----------------------------------------------------------------------------
+# E14: Engagement Sessions Repository
+# -----------------------------------------------------------------------------
+
+
+class SQLiteEngagementRepo(SQLiteRepoBase):
+    """
+    SQLite implementation of EngagementRepoPort.
+
+    Spec refs: E14.1, E14.2, E14.3
+    Test assertions: TA-0059, TA-0060
+
+    Privacy invariant: Only bucketed values stored, no precise timestamps/durations.
+    """
+
+    def store_session(
+        self,
+        content_id: UUID,
+        date: datetime,
+        time_bucket: str,
+        scroll_bucket: str,
+        is_engaged: bool,
+    ) -> None:
+        """Store or increment an engagement session aggregate."""
+        conn = self._get_conn()
+        try:
+            # Try to increment existing
+            date_str = date.strftime("%Y-%m-%d")
+            now = datetime.now(UTC).isoformat()
+
+            result = conn.execute(
+                """
+                UPDATE engagement_sessions
+                SET session_count = session_count + 1, updated_at = ?
+                WHERE content_id = ? AND date = ? AND time_bucket = ? AND scroll_bucket = ?
+                """,
+                (now, str(content_id), date_str, time_bucket, scroll_bucket),
+            )
+
+            if result.rowcount == 0:
+                # Create new aggregate
+                from uuid import uuid4
+
+                conn.execute(
+                    """
+                    INSERT INTO engagement_sessions (
+                        id, content_id, date, time_bucket, scroll_bucket,
+                        is_engaged, session_count, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(uuid4()),
+                        str(content_id),
+                        date_str,
+                        time_bucket,
+                        scroll_bucket,
+                        1 if is_engaged else 0,
+                        1,
+                        now,
+                        now,
+                    ),
+                )
+
+            if self._should_close():
+                conn.commit()
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_totals(
+        self,
+        content_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        engaged_only: bool = False,
+    ) -> dict[str, int]:
+        """Get engagement totals."""
+        conn = self._get_conn()
+        try:
+            query = "SELECT SUM(session_count) as total, SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END) as engaged FROM engagement_sessions WHERE 1=1"
+            params: list[Any] = []
+
+            if content_id:
+                query += " AND content_id = ?"
+                params.append(str(content_id))
+
+            if start_date:
+                query += " AND date >= ?"
+                params.append(start_date.strftime("%Y-%m-%d"))
+
+            if end_date:
+                query += " AND date < ?"
+                params.append(end_date.strftime("%Y-%m-%d"))
+
+            if engaged_only:
+                query += " AND is_engaged = 1"
+
+            row = conn.execute(query, params).fetchone()
+
+            return {
+                "total_sessions": row["total"] or 0 if row else 0,
+                "engaged_sessions": row["engaged"] or 0 if row else 0,
+            }
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_distribution(
+        self,
+        distribution_type: str,
+        content_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        """Get engagement distribution by bucket."""
+        conn = self._get_conn()
+        try:
+            bucket_col = "time_bucket" if distribution_type == "time" else "scroll_bucket"
+            query = f"SELECT {bucket_col} as bucket, SUM(session_count) as count FROM engagement_sessions WHERE 1=1"
+            params: list[Any] = []
+
+            if content_id:
+                query += " AND content_id = ?"
+                params.append(str(content_id))
+
+            if start_date:
+                query += " AND date >= ?"
+                params.append(start_date.strftime("%Y-%m-%d"))
+
+            if end_date:
+                query += " AND date < ?"
+                params.append(end_date.strftime("%Y-%m-%d"))
+
+            query += f" GROUP BY {bucket_col} ORDER BY {bucket_col}"
+
+            rows = conn.execute(query, params).fetchall()
+            return [{"bucket": r["bucket"], "count": r["count"] or 0} for r in rows]
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_top_engaged_content(
+        self,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Get top content by engagement."""
+        conn = self._get_conn()
+        try:
+            query = """
+                SELECT content_id,
+                       SUM(session_count) as total_sessions,
+                       SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END) as engaged_sessions
+                FROM engagement_sessions
+                WHERE 1=1
+            """
+            params: list[Any] = []
+
+            if start_date:
+                query += " AND date >= ?"
+                params.append(start_date.strftime("%Y-%m-%d"))
+
+            if end_date:
+                query += " AND date < ?"
+                params.append(end_date.strftime("%Y-%m-%d"))
+
+            query += " GROUP BY content_id ORDER BY engaged_sessions DESC LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(query, params).fetchall()
+            return [
+                {
+                    "content_id": UUID(r["content_id"]),
+                    "total_sessions": r["total_sessions"] or 0,
+                    "engaged_sessions": r["engaged_sessions"] or 0,
+                }
+                for r in rows
+            ]
+        finally:
+            if self._should_close():
+                conn.close()

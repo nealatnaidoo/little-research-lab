@@ -3,7 +3,8 @@ import Link from "next/link";
 import { OpenAPI, PublicService, ContentItemResponse } from "@/lib/api";
 import { BlockRenderer } from "@/components/content/block-renderer";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { ArrowLeft } from "lucide-react";
+import { ArticleReader } from "@/components/reader";
+import { ArrowLeft, Clock } from "lucide-react";
 
 // Force dynamic rendering - fetch fresh post data on each request
 export const dynamic = 'force-dynamic';
@@ -30,29 +31,57 @@ export default async function PostPage({ params }: PageProps) {
         notFound();
     }
 
+    // Estimate reading time (rough: 200 words per minute)
+    const wordCount = post.blocks?.reduce((acc, block) => {
+        const text = JSON.stringify(block.data_json || "");
+        return acc + text.split(/\s+/).length;
+    }, 0) || 0;
+    const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
     return (
         <PublicLayout>
-            <div className="container mx-auto px-4 py-12 max-w-3xl">
-            <Link
-                href="/"
-                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors"
-            >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-            </Link>
-            <header className="mb-8 text-center">
-                <h1 className="text-4xl font-bold mb-4 text-foreground">{post.title}</h1>
-                <div className="text-muted-foreground">
-                    {new Date(post.publish_at || post.created_at).toLocaleDateString()}
-                </div>
-            </header>
+            <ArticleReader className="container mx-auto px-4 py-12">
+                <Link
+                    href="/"
+                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors no-underline"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Home
+                </Link>
 
-            <article>
-                {post.blocks?.map((block) => (
-                    <BlockRenderer key={block.id || block.position} block={block} />
-                ))}
-            </article>
-            </div>
+                <header className="mb-10 text-center not-prose">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground tracking-tight">
+                        {post.title}
+                    </h1>
+                    <div className="flex items-center justify-center gap-4 text-muted-foreground">
+                        <time dateTime={post.publish_at || post.created_at}>
+                            {new Date(post.publish_at || post.created_at).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                            })}
+                        </time>
+                        <span className="text-muted-foreground/50">|</span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            {readingTime} min read
+                        </span>
+                    </div>
+                </header>
+
+                <article>
+                    {post.blocks?.map((block) => (
+                        <BlockRenderer key={block.id || block.position} block={block} />
+                    ))}
+                </article>
+
+                {/* Article footer */}
+                <footer className="mt-12 pt-8 border-t not-prose">
+                    <div className="text-center text-muted-foreground text-sm">
+                        Thanks for reading
+                    </div>
+                </footer>
+            </ArticleReader>
         </PublicLayout>
     );
 }
