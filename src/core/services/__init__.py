@@ -13,7 +13,8 @@
 import warnings
 
 warnings.warn(
-    "src.core.services is deprecated. Use src.components instead. "
+    "src.core.services is deprecated. Import from src.components.* instead. "
+    "This module will be removed on 2026-02-14. "
     "See src/core/services/DEPRECATED.md for migration map.",
     DeprecationWarning,
     stacklevel=2,

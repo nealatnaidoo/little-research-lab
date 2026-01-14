@@ -18,7 +18,7 @@ Key behaviors:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
@@ -55,10 +55,31 @@ class ValidationError:
     message: str
 
 
+# --- Time Port Protocol ---
+
+
+class TimePort(Protocol):
+    """Time provider interface."""
+
+    def now_utc(self) -> datetime:
+        """Get current UTC time."""
+        ...
+
+
+def _get_now(time_port: TimePort | None = None) -> datetime:
+    """Get current time via injected port (deterministic core)."""
+    if time_port:
+        return time_port.now_utc()
+    # Fallback for backward compatibility - should inject TimePort in production
+    from src.adapters.time_london import LondonTimeAdapter
+
+    return LondonTimeAdapter().now_utc()
+
+
 # --- Default Settings ---
 
 
-def get_default_settings() -> SiteSettings:
+def get_default_settings(time_port: TimePort | None = None) -> SiteSettings:
     """
     Get fallback default settings.
 
@@ -70,7 +91,7 @@ def get_default_settings() -> SiteSettings:
         avatar_asset_id=None,
         theme="system",
         social_links_json={},
-        updated_at=datetime.now(UTC),
+        updated_at=_get_now(time_port),
     )
 
 
@@ -282,6 +303,7 @@ class SettingsService:
         self,
         repo: SettingsRepoPort,
         cache_invalidator: CacheInvalidator | None = None,
+        time_port: TimePort | None = None,
         rules: list[ValidationRule] | None = None,
     ) -> None:
         """
@@ -290,10 +312,12 @@ class SettingsService:
         Args:
             repo: Settings repository
             cache_invalidator: Optional cache invalidator for SSR cache
+            time_port: Optional time port for deterministic timestamps
             rules: Optional custom validation rules
         """
         self._repo = repo
         self._cache_invalidator = cache_invalidator or NoOpCacheInvalidator()
+        self._time_port = time_port
         self._rules = rules or DEFAULT_RULES
 
     def get(self) -> SiteSettings:
@@ -304,7 +328,7 @@ class SettingsService:
         """
         settings = self._repo.get()
         if settings is None:
-            return get_default_settings()
+            return get_default_settings(self._time_port)
         return settings
 
     def update(
@@ -329,7 +353,7 @@ class SettingsService:
         # Apply updates
         updated_dict = current.model_dump()
         updated_dict.update(updates)
-        updated_dict["updated_at"] = datetime.now(UTC)
+        updated_dict["updated_at"] = _get_now(self._time_port)
 
         # Create new settings object
         try:

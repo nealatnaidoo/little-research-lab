@@ -20,7 +20,7 @@ Key behaviors:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Protocol
 from uuid import UUID, uuid4
 
@@ -210,7 +210,12 @@ def create_publish_job(
     now_utc: datetime | None = None,
 ) -> PublishJob:
     """Create a new publish job."""
-    now = now_utc or datetime.now(UTC)
+    if now_utc is None:
+        # Fallback for backward compatibility - should pass now_utc in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        now_utc = LondonTimeAdapter().now_utc()
+    now = now_utc
     return PublishJob(
         id=uuid4(),
         content_id=content_id,
@@ -265,10 +270,13 @@ class SchedulerService:
         self._config = config or DEFAULT_CONFIG
 
     def _now_utc(self) -> datetime:
-        """Get current UTC time."""
+        """Get current UTC time via injected port (deterministic core)."""
         if self._time:
             return self._time.now_utc()
-        return datetime.now(UTC)
+        # Fallback for backward compatibility - should inject TimePort in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
     def _is_past_or_now(self, dt: datetime) -> bool:
         """Check if time is past or now."""

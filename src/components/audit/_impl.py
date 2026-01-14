@@ -18,7 +18,7 @@ Key behaviors:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Protocol
 from uuid import UUID, uuid4
@@ -208,10 +208,13 @@ class TimePort(Protocol):
 
 
 class DefaultTimePort:
-    """Default time provider."""
+    """Default time provider - delegates to LondonTimeAdapter."""
 
     def now_utc(self) -> datetime:
-        return datetime.now(UTC)
+        """Get current UTC time via adapter (deterministic core)."""
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
 
 # --- Audit Service ---

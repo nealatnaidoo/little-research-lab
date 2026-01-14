@@ -20,7 +20,7 @@ Key behaviors:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any, Protocol
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
@@ -47,6 +47,17 @@ class RedirectConfig:
 
 
 DEFAULT_CONFIG = RedirectConfig()
+
+
+# --- Time Port Protocol ---
+
+
+class TimePort(Protocol):
+    """Time provider interface."""
+
+    def now_utc(self) -> datetime:
+        """Get current UTC time."""
+        ...
 
 
 # --- Validation Errors ---
@@ -380,12 +391,23 @@ class RedirectService:
         self,
         repo: RedirectRepoPort,
         route_checker: RouteCheckerPort | None = None,
+        time_port: TimePort | None = None,
         config: RedirectConfig | None = None,
     ) -> None:
         """Initialize service."""
         self._repo = repo
         self._route_checker = route_checker
+        self._time_port = time_port
         self._config = config or DEFAULT_CONFIG
+
+    def _now(self) -> datetime:
+        """Get current time via injected port (deterministic core)."""
+        if self._time_port:
+            return self._time_port.now_utc()
+        # Fallback for backward compatibility - should inject TimePort in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
     def get(self, redirect_id: UUID) -> Redirect | None:
         """Get redirect by ID."""
@@ -463,7 +485,7 @@ class RedirectService:
             return None, errors
 
         # Create redirect
-        now = datetime.now(UTC)
+        now = self._now()
         redirect = Redirect(
             id=uuid4(),
             source_path=norm_source,
@@ -545,7 +567,7 @@ class RedirectService:
         if "notes" in updates:
             redirect.notes = updates["notes"]
 
-        redirect.updated_at = datetime.now(UTC)
+        redirect.updated_at = self._now()
         saved = self._repo.save(redirect)
         return saved, []
 

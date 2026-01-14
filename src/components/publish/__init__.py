@@ -1,6 +1,6 @@
 """Publish component - manages content publishing lifecycle."""
 
-from src.components.publish.component import PublishComponent
+from src.components.publish.component import PublishComponent, run
 from src.components.publish.models import (
     ProcessDueInput,
     ProcessDueOutput,
@@ -15,6 +15,8 @@ from src.components.publish.models import (
 from src.components.publish.ports import ClockPort, ContentRepoPort, PolicyPort, UserRepoPort
 
 __all__ = [
+    # Entry point
+    "run",
     # Component
     "PublishComponent",
     # Models

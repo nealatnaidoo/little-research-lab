@@ -264,3 +264,33 @@ class PublishComponent:
         # Success if we processed any items or there were no errors
         success = len(errors) == 0
         return ProcessDueOutput(count=count, errors=errors, success=success)
+
+
+# --- Module-level Entry Point ---
+
+
+def run(
+    inp: PublishInput,
+    *,
+    content_repo: ContentRepoPort,
+    user_repo: UserRepoPort,
+    policy: PolicyPort,
+    clock: ClockPort,
+) -> PublishOutput:
+    """
+    Standard entry point for publish component.
+
+    Routes to appropriate handler based on input type.
+
+    Args:
+        inp: One of PublishNowInput, ScheduleInput, UnpublishInput, ProcessDueInput
+        content_repo: Content repository port
+        user_repo: User repository port
+        policy: Policy port for permission checks
+        clock: Clock port for time operations
+
+    Returns:
+        Corresponding output type based on input
+    """
+    component = PublishComponent(content_repo, user_repo, policy, clock)
+    return component.run(inp)

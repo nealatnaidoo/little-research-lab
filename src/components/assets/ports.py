@@ -6,10 +6,19 @@ Spec refs: E2.1, E2.2, E2.3
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, BinaryIO, Protocol
 from uuid import UUID
 
 from src.core.entities import Asset, AssetVersion
+
+
+class TimePort(Protocol):
+    """Time provider interface."""
+
+    def now_utc(self) -> datetime:
+        """Get current UTC time."""
+        ...
 
 
 class AssetRepoPort(Protocol):

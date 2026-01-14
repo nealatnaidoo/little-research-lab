@@ -189,9 +189,19 @@ def calculate_bucket_end(bucket_start: datetime, bucket_type: BucketType) -> dat
 class InMemoryAggregateRepo:
     """In-memory aggregate repository for testing/dev."""
 
-    def __init__(self) -> None:
+    def __init__(self, time_port: TimePort | None = None) -> None:
         self._buckets: dict[UUID, AnalyticsEventAggregate] = {}
         self._index: dict[str, UUID] = {}  # dimension_key -> bucket_id
+        self._time_port = time_port
+
+    def _now(self) -> datetime:
+        """Get current time via injected port (deterministic core)."""
+        if self._time_port:
+            return self._time_port.now_utc()
+        # Fallback for backward compatibility - should inject TimePort in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
     def _build_key(
         self,
@@ -272,7 +282,7 @@ class InMemoryAggregateRepo:
             count_real=bucket.count_real + count_real,
             count_bot=bucket.count_bot + count_bot,
             created_at=bucket.created_at,
-            updated_at=datetime.now(UTC),
+            updated_at=self._now(),
         )
         self._buckets[bucket_id] = updated
 
@@ -350,10 +360,13 @@ class AggregateService:
         self._config = config or DEFAULT_CONFIG
 
     def _now(self) -> datetime:
-        """Get current time."""
+        """Get current time via injected port (deterministic core)."""
         if self._time_port:
             return self._time_port.now_utc()
-        return datetime.now(UTC)
+        # Fallback for backward compatibility - should inject TimePort in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
     def record(self, event: AggregateInput) -> list[AnalyticsEventAggregate]:
         """

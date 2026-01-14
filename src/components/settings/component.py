@@ -8,7 +8,7 @@ Provides singleton settings read/write with validation and fallback defaults.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from urllib.parse import urlparse
 
 from src.core.entities import SiteSettings
@@ -23,7 +23,7 @@ from .models import (
     ValidationError,
     ValidationRule,
 )
-from .ports import CacheInvalidatorPort, SettingsRepoPort
+from .ports import CacheInvalidatorPort, SettingsRepoPort, TimePort
 
 # --- Default Validation Rules ---
 
@@ -37,7 +37,17 @@ DEFAULT_RULES = [
 # --- Default Settings ---
 
 
-def get_default_settings() -> SiteSettings:
+def _get_now(time_port: TimePort | None = None) -> datetime:
+    """Get current time via injected port (deterministic core)."""
+    if time_port:
+        return time_port.now_utc()
+    # Fallback for backward compatibility - should inject TimePort in production
+    from src.adapters.time_london import LondonTimeAdapter
+
+    return LondonTimeAdapter().now_utc()
+
+
+def get_default_settings(time_port: TimePort | None = None) -> SiteSettings:
     """
     Get fallback default settings.
 
@@ -49,7 +59,7 @@ def get_default_settings() -> SiteSettings:
         avatar_asset_id=None,
         theme="system",
         social_links_json={},
-        updated_at=datetime.now(UTC),
+        updated_at=_get_now(time_port),
     )
 
 
@@ -228,6 +238,7 @@ def run_update(
     *,
     repo: SettingsRepoPort,
     cache: CacheInvalidatorPort | None = None,
+    time_port: TimePort | None = None,
     rules: list[ValidationRule] | None = None,
 ) -> UpdateSettingsOutput:
     """
@@ -239,6 +250,7 @@ def run_update(
         inp: Input containing updates dictionary.
         repo: Settings repository port.
         cache: Optional cache invalidator port.
+        time_port: Optional time port for deterministic timestamps.
         rules: Optional custom validation rules.
 
     Returns:
@@ -250,12 +262,12 @@ def run_update(
     # Get current settings or defaults
     current = repo.get()
     if current is None:
-        current = get_default_settings()
+        current = get_default_settings(time_port=time_port)
 
     # Apply updates
     updated_dict = current.model_dump()
     updated_dict.update(inp.updates)
-    updated_dict["updated_at"] = datetime.now(UTC)
+    updated_dict["updated_at"] = _get_now(time_port)
 
     # Create new settings object
     try:

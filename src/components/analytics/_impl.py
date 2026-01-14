@@ -191,8 +191,18 @@ class TimePort(Protocol):
 class InMemoryRateLimiter:
     """In-memory rate limiter for testing/dev."""
 
-    def __init__(self) -> None:
+    def __init__(self, time_port: TimePort | None = None) -> None:
         self._requests: dict[str, list[datetime]] = {}
+        self._time_port = time_port
+
+    def _now(self) -> datetime:
+        """Get current time via injected port (deterministic core)."""
+        if self._time_port:
+            return self._time_port.now_utc()
+        # Fallback for backward compatibility - should inject TimePort in production
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
     def check_rate_limit(
         self,
@@ -201,7 +211,7 @@ class InMemoryRateLimiter:
         window_seconds: int,
     ) -> bool:
         """Check if rate limit allows request."""
-        now = datetime.now(UTC)
+        now = self._now()
         cutoff = now - timedelta(seconds=window_seconds)
 
         if key not in self._requests:
@@ -215,7 +225,7 @@ class InMemoryRateLimiter:
 
     def record_request(self, key: str, window_seconds: int) -> None:
         """Record a request."""
-        now = datetime.now(UTC)
+        now = self._now()
         if key not in self._requests:
             self._requests[key] = []
         self._requests[key].append(now)
@@ -237,11 +247,13 @@ class InMemoryEventStore:
 
 
 class DefaultTimePort:
-    """Default time provider."""
+    """Default time provider - delegates to LondonTimeAdapter."""
 
     def now_utc(self) -> datetime:
-        """Get current UTC time."""
-        return datetime.now(UTC)
+        """Get current UTC time via adapter (deterministic core)."""
+        from src.adapters.time_london import LondonTimeAdapter
+
+        return LondonTimeAdapter().now_utc()
 
 
 # --- Validation Functions ---

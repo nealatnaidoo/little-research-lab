@@ -17,7 +17,7 @@ Invariants:
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any, BinaryIO
 from uuid import UUID, uuid4
 
@@ -39,7 +39,17 @@ from .models import (
     VersionListOutput,
     VersionOutput,
 )
-from .ports import AssetRepoPort, RulesPort, StoragePort, VersionRepoPort
+from .ports import AssetRepoPort, RulesPort, StoragePort, TimePort, VersionRepoPort
+
+
+def _get_now(time_port: TimePort | None = None) -> datetime:
+    """Get current time via injected port (deterministic core)."""
+    if time_port:
+        return time_port.now_utc()
+    # Fallback for backward compatibility - should inject TimePort in production
+    from src.adapters.time_london import LondonTimeAdapter
+
+    return LondonTimeAdapter().now_utc()
 
 # --- Default Configuration ---
 
@@ -344,6 +354,7 @@ def run_upload(
     version_repo: VersionRepoPort,
     storage: StoragePort,
     rules: RulesPort | None = None,
+    time_port: TimePort | None = None,
 ) -> UploadOutput:
     """
     Upload an asset or create a new version.
@@ -354,6 +365,7 @@ def run_upload(
         version_repo: Version repository port.
         storage: Storage port for blob data.
         rules: Optional rules port for configuration.
+        time_port: Optional time port for deterministic timestamps.
 
     Returns:
         UploadOutput with asset, version, and metadata.
@@ -437,7 +449,7 @@ def run_upload(
         filename_original=inp.filename,
         is_latest=True,  # New version becomes latest
         created_by_user_id=inp.user_id,
-        created_at=datetime.now(UTC),
+        created_at=_get_now(time_port),
     )
     version = version_repo.save(version)
 
