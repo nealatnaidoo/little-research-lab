@@ -3,8 +3,9 @@ import Link from "next/link";
 import { OpenAPI, PublicService, ContentItemResponse } from "@/lib/api";
 import { BlockRenderer } from "@/components/content/block-renderer";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { ArticleReader, EngagementTracker } from "@/components/reader";
+import { ArticleReader, EngagementTracker, TextToSpeechControls } from "@/components/reader";
 import { ArrowLeft, Clock } from "lucide-react";
+import { extractTextFromBlocks } from "@/lib/extractText";
 
 // Force dynamic rendering - fetch fresh post data on each request
 export const dynamic = 'force-dynamic';
@@ -31,11 +32,9 @@ export default async function PostPage({ params }: PageProps) {
         notFound();
     }
 
-    // Estimate reading time (rough: 200 words per minute)
-    const wordCount = post.blocks?.reduce((acc, block) => {
-        const text = JSON.stringify(block.data_json || "");
-        return acc + text.split(/\s+/).length;
-    }, 0) || 0;
+    // Extract plain text for TTS and word count
+    const articleText = extractTextFromBlocks(post.blocks);
+    const wordCount = articleText.split(/\s+/).filter(Boolean).length;
     const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
     return (
@@ -69,6 +68,8 @@ export default async function PostPage({ params }: PageProps) {
                             <Clock className="h-4 w-4" />
                             {readingTime} min read
                         </span>
+                        <span className="text-muted-foreground/50">|</span>
+                        <TextToSpeechControls text={articleText} />
                     </div>
                 </header>
 

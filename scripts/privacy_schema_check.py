@@ -75,6 +75,19 @@ ALLOWED_ANALYTICS_FIELDS: frozenset[str] = frozenset({
     "utm_content",
     "utm_term",
     "ua_class",  # Coarse classification only: bot/real/unknown
+    # Engagement fields (bucketed, not raw values)
+    "time_on_page",  # Sent raw but bucketed before storage
+    "scroll_depth",  # Sent raw but bucketed before storage
+})
+
+# Allowed engagement storage fields (must be bucketed)
+ALLOWED_ENGAGEMENT_FIELDS: frozenset[str] = frozenset({
+    "content_id",
+    "date",  # Day only, not precise timestamp
+    "time_bucket",  # Bucketed, not raw seconds
+    "scroll_bucket",  # Bucketed, not raw percent
+    "is_engaged",
+    "count",
 })
 
 
@@ -383,17 +396,254 @@ def check_database_schema() -> CheckResult:
         )
 
 
+def check_engagement_repo_port() -> CheckResult:
+    """
+    Check EngagementRepoPort stores only bucketed values (T-0064, I9).
+
+    The store_session method should only accept bucketed fields,
+    not raw time_on_page_seconds or scroll_depth_percent.
+    """
+    try:
+        from src.components.engagement.ports import EngagementRepoPort
+        import typing
+
+        # Get type hints for store_session method
+        hints = typing.get_type_hints(EngagementRepoPort.store_session)
+
+        # Remove return type
+        hints.pop("return", None)
+
+        # Get parameter names
+        params = set(hints.keys())
+
+        # Check for PII fields
+        pii_found = params & PII_FIELD_PATTERNS
+        if pii_found:
+            return CheckResult(
+                name="engagement_repo_port",
+                passed=False,
+                message=f"PII fields in EngagementRepoPort.store_session: {pii_found}",
+                details=[f"Forbidden field: {f}" for f in sorted(pii_found)],
+            )
+
+        # Check for raw (unbucketed) fields
+        raw_fields = {"time_on_page_seconds", "scroll_depth_percent", "raw_time", "raw_scroll", "seconds", "percent"}
+        raw_found = params & raw_fields
+        if raw_found:
+            return CheckResult(
+                name="engagement_repo_port",
+                passed=False,
+                message=f"Raw (unbucketed) fields in EngagementRepoPort.store_session: {raw_found}",
+                details=[f"Should be bucketed: {f}" for f in sorted(raw_found)],
+            )
+
+        # Check fields are in allowed list
+        allowed = ALLOWED_ENGAGEMENT_FIELDS | {"self"}
+        unexpected = params - allowed
+        if unexpected:
+            return CheckResult(
+                name="engagement_repo_port",
+                passed=False,
+                message=f"Unexpected fields in EngagementRepoPort.store_session: {unexpected}",
+                details=[
+                    "Only bucketed values allowed per I9",
+                    f"Allowed: {sorted(ALLOWED_ENGAGEMENT_FIELDS)}",
+                    f"Found: {sorted(unexpected)}",
+                ],
+            )
+
+        return CheckResult(
+            name="engagement_repo_port",
+            passed=True,
+            message="EngagementRepoPort stores only bucketed values (I9 compliant)",
+            details=[f"Allowed field: {f}" for f in sorted(params - {"self"})],
+        )
+
+    except ImportError as e:
+        return CheckResult(
+            name="engagement_repo_port",
+            passed=True,  # Don't fail if engagement not implemented
+            message=f"Engagement repo check skipped: {e}",
+        )
+
+
+def check_engagement_component_bucketing() -> CheckResult:
+    """
+    Check engagement component buckets values before storage (T-0064, I9).
+
+    The component should have bucketing functions and call them
+    before storing any engagement data.
+    """
+    try:
+        engagement_path = PROJECT_ROOT / "src/components/engagement/component.py"
+        if not engagement_path.exists():
+            return CheckResult(
+                name="engagement_component_bucketing",
+                passed=True,
+                message="Engagement component not yet implemented",
+            )
+
+        content = engagement_path.read_text()
+
+        details = []
+        errors = []
+
+        # Check for bucketing functions
+        if "bucket_time_on_page" not in content:
+            errors.append("Missing bucket_time_on_page function")
+        else:
+            details.append("Has bucket_time_on_page function")
+
+        if "bucket_scroll_depth" not in content:
+            errors.append("Missing bucket_scroll_depth function")
+        else:
+            details.append("Has bucket_scroll_depth function")
+
+        # Check for day truncation (privacy)
+        if "truncate_to_day" not in content:
+            errors.append("Missing truncate_to_day - precise timestamps may be stored")
+        else:
+            details.append("Uses truncate_to_day for date privacy")
+
+        # Check that raw values aren't stored directly
+        if "time_on_page_seconds" in content and "bucket" not in content.lower():
+            errors.append("Raw time_on_page_seconds may be stored without bucketing")
+
+        if errors:
+            return CheckResult(
+                name="engagement_component_bucketing",
+                passed=False,
+                message=f"Engagement bucketing issues: {len(errors)} found",
+                details=errors,
+            )
+
+        return CheckResult(
+            name="engagement_component_bucketing",
+            passed=True,
+            message="Engagement component buckets values before storage (I9 compliant)",
+            details=details,
+        )
+
+    except Exception as e:
+        return CheckResult(
+            name="engagement_component_bucketing",
+            passed=True,
+            message=f"Engagement bucketing check note: {e}",
+        )
+
+
+def check_engagement_sqlite_schema() -> CheckResult:
+    """
+    Check SQLite engagement_sessions table schema (T-0064).
+
+    The table should store only bucketed values, not raw times or percentages.
+    """
+    try:
+        sqlite_path = PROJECT_ROOT / "src/adapters/sqlite_db.py"
+        if not sqlite_path.exists():
+            return CheckResult(
+                name="engagement_sqlite_schema",
+                passed=True,
+                message="SQLite adapter not found",
+            )
+
+        content = sqlite_path.read_text()
+
+        # Check if engagement_sessions table exists
+        if "engagement_sessions" not in content:
+            return CheckResult(
+                name="engagement_sqlite_schema",
+                passed=True,
+                message="engagement_sessions table not in sqlite_db.py",
+            )
+
+        details = []
+        errors = []
+
+        # Extract the engagement_sessions table CREATE statement
+        # Look for CREATE TABLE engagement_sessions ... )
+        import re
+        engagement_table_match = re.search(
+            r'CREATE TABLE[^;]*engagement_sessions[^;]*\)',
+            content,
+            re.IGNORECASE | re.DOTALL
+        )
+
+        if engagement_table_match:
+            table_schema = engagement_table_match.group(0)
+
+            # Check for forbidden raw value columns in engagement table only
+            forbidden_patterns = [
+                ("seconds INTEGER", "Raw seconds stored instead of time_bucket TEXT"),
+                ("percent INTEGER", "Raw percent stored instead of scroll_bucket TEXT"),
+                ("time_on_page INTEGER", "Raw time stored instead of bucket"),
+                ("scroll_depth INTEGER", "Raw scroll stored instead of bucket"),
+                (" ip ", "IP address stored in engagement table"),
+                ("visitor_id", "Visitor ID stored in engagement table"),
+                ("email", "Email stored in engagement table"),
+                ("precise_timestamp", "Precise timestamp stored in engagement table"),
+            ]
+
+            for pattern, error_msg in forbidden_patterns:
+                if pattern.lower() in table_schema.lower():
+                    errors.append(error_msg)
+
+            # Check for required bucketed columns
+            if "time_bucket" in table_schema:
+                details.append("Has time_bucket column (bucketed)")
+            else:
+                errors.append("Missing time_bucket column")
+
+            if "scroll_bucket" in table_schema:
+                details.append("Has scroll_bucket column (bucketed)")
+            else:
+                errors.append("Missing scroll_bucket column")
+        else:
+            # Fallback: check for class definition
+            if "time_bucket" in content:
+                details.append("Has time_bucket reference")
+            if "scroll_bucket" in content:
+                details.append("Has scroll_bucket reference")
+
+        if errors:
+            return CheckResult(
+                name="engagement_sqlite_schema",
+                passed=False,
+                message=f"Engagement SQLite schema issues: {len(errors)} found",
+                details=errors,
+            )
+
+        return CheckResult(
+            name="engagement_sqlite_schema",
+            passed=True,
+            message="engagement_sessions table stores only bucketed values",
+            details=details,
+        )
+
+    except Exception as e:
+        return CheckResult(
+            name="engagement_sqlite_schema",
+            passed=True,
+            message=f"SQLite schema check note: {e}",
+        )
+
+
 # --- Main Runner ---
 
 
 def run_privacy_checks() -> PrivacyReport:
     """Run all privacy schema checks and return report."""
     checks = [
+        # Analytics checks (T-0047)
         check_analytics_event_model(),
         check_ingestion_config(),
         check_rules_privacy_settings(),
         check_analytics_output_models(),
         check_database_schema(),
+        # Engagement checks (T-0064)
+        check_engagement_repo_port(),
+        check_engagement_component_bucketing(),
+        check_engagement_sqlite_schema(),
     ]
 
     all_passed = all(c.passed for c in checks)

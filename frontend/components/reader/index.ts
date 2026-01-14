@@ -3,3 +3,4 @@ export type { ReaderPreferences, FontSize, ReadingWidth } from "./ReaderControls
 export { ReadingProgressBar } from "./ReadingProgressBar"
 export { ArticleReader } from "./ArticleReader"
 export { EngagementTracker } from "./EngagementTracker"
+export { TextToSpeechControls } from "./TextToSpeechControls"
