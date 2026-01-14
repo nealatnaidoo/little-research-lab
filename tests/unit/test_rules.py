@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 import yaml
 
-from src.core.services.rules import (
+from src.components.rules import (
     RulesSchema,
     RulesValidationError,
     init_rules,

@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.services.canonical import (
+from src.components.render import (
     CanonicalConfig,
     CanonicalService,
-    build_canonical_url,
     create_canonical_service,
     normalize_path,
     normalize_url,
+)
+from src.components.render import (
+    build_canonical_url_with_config as build_canonical_url,
 )
 
 # --- Mock Redirect Resolver ---

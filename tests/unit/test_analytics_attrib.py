@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.services.analytics_attrib import (
+from src.components.analytics import (
     AttributionConfig,
     AttributionService,
     ReferrerInfo,

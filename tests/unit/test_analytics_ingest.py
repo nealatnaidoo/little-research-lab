@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.services.analytics_ingest import (
+from src.components.analytics import (
     AnalyticsEvent,
     AnalyticsIngestionService,
     EventType,

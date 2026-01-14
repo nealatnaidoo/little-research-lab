@@ -5,6 +5,23 @@ Spec refs: E4.4
 """
 
 # Re-exports from _impl for backwards compatibility
+# Re-exports from legacy render_posts service (pending full migration)
+from src.core.services.render_posts import (
+    render_blockquote,
+    render_bullet_list,
+    render_code_block,
+    render_content,
+    render_hard_break,
+    render_heading,
+    render_horizontal_rule,
+    render_image,
+    render_list_item,
+    render_node,
+    render_ordered_list,
+    render_paragraph,
+    render_text,
+)
+
 from ._impl import (
     DEFAULT_RENDER_CONFIG,
     PostRenderer,
@@ -57,4 +74,18 @@ __all__ = [
     "create_post_renderer",
     "render_post_body",
     "render_rich_text",
+    # Legacy service re-exports
+    "render_blockquote",
+    "render_bullet_list",
+    "render_code_block",
+    "render_content",
+    "render_hard_break",
+    "render_heading",
+    "render_horizontal_rule",
+    "render_image",
+    "render_list_item",
+    "render_node",
+    "render_ordered_list",
+    "render_paragraph",
+    "render_text",
 ]

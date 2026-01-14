@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.routes import admin_audit
-from src.core.services.audit import (
+from src.components.audit import (
     AuditAction,
     AuditService,
     EntityType,

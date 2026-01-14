@@ -8,7 +8,7 @@ These tests ensure Postgres-compatible behavior by testing against abstract inte
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -261,7 +261,7 @@ class TestPublishJobRepoContract:
         """Idempotency key (content_id, publish_at_utc) is unique."""
         repo = SQLitePublishJobRepo(db_path)
         content_id = uuid4()
-        publish_at = datetime.utcnow() + timedelta(hours=1)
+        publish_at = datetime.now(UTC) + timedelta(hours=1)
 
         job1 = PublishJob(
             content_id=content_id,
@@ -284,7 +284,7 @@ class TestPublishJobRepoContract:
         """create_if_not_exists returns existing job if present."""
         repo = SQLitePublishJobRepo(db_path)
         content_id = uuid4()
-        publish_at = datetime.utcnow() + timedelta(hours=1)
+        publish_at = datetime.now(UTC) + timedelta(hours=1)
 
         job = PublishJob(
             content_id=content_id,
@@ -309,7 +309,7 @@ class TestPublishJobRepoContract:
         """claim_next_runnable sets status to running."""
         repo = SQLitePublishJobRepo(db_path)
         content_id = uuid4()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         past = now - timedelta(minutes=5)
 
         job = PublishJob(
@@ -328,7 +328,7 @@ class TestPublishJobRepoContract:
         """Jobs are not claimed before their publish time."""
         repo = SQLitePublishJobRepo(db_path)
         content_id = uuid4()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         future = now + timedelta(hours=1)
 
         job = PublishJob(

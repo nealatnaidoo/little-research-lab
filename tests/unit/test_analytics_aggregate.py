@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.services.analytics_aggregate import (
+from src.components.analytics import (
     AggregateConfig,
     AggregateInput,
     AggregateService,

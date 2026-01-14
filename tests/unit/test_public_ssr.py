@@ -18,8 +18,8 @@ from src.api.routes.public_ssr import (
     render_meta_tags_html,
     render_ssr_page,
 )
-from src.core.services.render import PageMetadata, RenderService, create_render_service
-from src.core.services.settings import SettingsService, get_default_settings
+from src.components.render import PageMetadata, RenderService, create_render_service
+from src.components.settings import SettingsService, get_default_settings
 from src.domain.entities import ContentItem, SiteSettings
 
 # --- Mock Repository ---

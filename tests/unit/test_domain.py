@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -15,7 +15,7 @@ def test_content_item_defaults():
 
 
 def test_transition_draft_to_published():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     item = ContentItem(
         type="post", slug="test", title="Test", owner_user_id=uuid4(), status="draft"
     )
@@ -27,7 +27,7 @@ def test_transition_draft_to_published():
 
 
 def test_transition_draft_to_scheduled_valid():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     future = now + timedelta(days=1)
 
     item = ContentItem(
@@ -47,7 +47,7 @@ def test_transition_draft_to_scheduled_valid():
 
 
 def test_transition_draft_to_scheduled_invalid_past():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     past = now - timedelta(hours=1)
 
     item = ContentItem(

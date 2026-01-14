@@ -287,12 +287,15 @@ export default function EditResourcePage({ params }: PageProps) {
                                         first.
                                     </div>
                                 ) : (
-                                    <Select value={pdfAssetId} onValueChange={setPdfAssetId}>
+                                    <Select
+                                        value={pdfAssetId || "__none__"}
+                                        onValueChange={(v) => setPdfAssetId(v === "__none__" ? "" : v)}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a PDF file" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">No PDF selected</SelectItem>
+                                            <SelectItem value="__none__">No PDF selected</SelectItem>
                                             {assets.map((asset) => (
                                                 <SelectItem key={asset.id} value={asset.id}>
                                                     {asset.filename_original}

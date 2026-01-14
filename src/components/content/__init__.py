@@ -4,6 +4,19 @@ Content component - Content lifecycle and state machine management.
 Spec refs: E2, E3, E4, SM1
 """
 
+# Re-exports from legacy content service (pending full migration)
+from src.core.services.content import (
+    ContentService,
+    ContentStateMachine,
+    InvalidTransitionError,
+    PublishGuardError,
+    StateTransition,
+    create_content_service,
+    extract_asset_references,
+    validate_content_fields,
+    validate_publish_at,
+)
+
 from .component import (
     run,
     run_create,
@@ -58,4 +71,14 @@ __all__ = [
     "ContentRepoPort",
     "RulesPort",
     "TimePort",
+    # Legacy service re-exports
+    "ContentService",
+    "ContentStateMachine",
+    "InvalidTransitionError",
+    "PublishGuardError",
+    "StateTransition",
+    "create_content_service",
+    "extract_asset_references",
+    "validate_content_fields",
+    "validate_publish_at",
 ]

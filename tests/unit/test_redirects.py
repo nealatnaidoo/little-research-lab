@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.core.services.redirects import (
+from src.components.redirects import (
     Redirect,
     RedirectConfig,
     RedirectService,

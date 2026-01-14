@@ -20,7 +20,7 @@ from src.api.schemas import (
     ResourcePDFResponse,
     ResourcePDFUpdateRequest,
 )
-from src.core.services.resource_pdf import (
+from src.components.render import (
     ResourcePDFService,
     create_resource_pdf_service,
 )

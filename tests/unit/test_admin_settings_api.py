@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.core.services.settings import SettingsService, get_default_settings
+from src.components.settings import SettingsService, get_default_settings
 from src.domain.entities import SiteSettings, User
 
 # --- Mock Repository ---

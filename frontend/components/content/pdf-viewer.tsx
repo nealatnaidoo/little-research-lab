@@ -93,12 +93,15 @@ export function PDFViewer({
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Detect browser support on mount
+  // Detect browser support on mount (use requestAnimationFrame to avoid cascading renders)
   useEffect(() => {
-    setMounted(true);
-    const [supports, reason] = detectPdfEmbedSupport();
-    setSupportsEmbed(supports);
-    setFallbackReason(reason);
+    const frameId = requestAnimationFrame(() => {
+      setMounted(true);
+      const [supports, reason] = detectPdfEmbedSupport();
+      setSupportsEmbed(supports);
+      setFallbackReason(reason);
+    });
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   const fileDetails = formatFileDetails(fileSizeDisplay, pageCountDisplay);

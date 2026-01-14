@@ -13,8 +13,7 @@ from datetime import datetime
 
 import pytest
 
-from src.core.entities import SiteSettings
-from src.core.services.settings import (
+from src.components.settings import (
     SettingsService,
     ValidationRule,
     create_settings_service,
@@ -22,6 +21,7 @@ from src.core.services.settings import (
     validate_settings,
     validate_url,
 )
+from src.core.entities import SiteSettings
 
 
 class MockSettingsRepo:

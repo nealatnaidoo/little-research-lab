@@ -9,10 +9,14 @@ Spec refs: E8.1
 # because the API routes expect Enum classes
 from ._impl import (
     AuditAction,
+    AuditConfig,
     AuditEntry,
+    AuditQuery,
     AuditService,
+    DefaultTimePort,
     EntityType,
     InMemoryAuditRepo,
+    create_audit_service,
 )
 from .component import (
     run,
@@ -52,7 +56,11 @@ __all__ = [
     # Ports
     "AuditRepoPort",
     "TimePort",
-    # Legacy _impl re-exports
+    # _impl re-exports
+    "AuditConfig",
+    "AuditQuery",
     "AuditService",
+    "DefaultTimePort",
     "InMemoryAuditRepo",
+    "create_audit_service",
 ]

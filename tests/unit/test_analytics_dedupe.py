@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from src.core.services.analytics_dedupe import (
+from src.components.analytics import (
     DedupeConfig,
     DedupeService,
     InMemoryDedupeStore,

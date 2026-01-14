@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -105,7 +105,7 @@ def test_R4_path_safety(tmp_path):
 # --- R5: Lifecycle ---
 def test_R5_lifecycle():
     """R5: Content status transitions must follow the valid state machine."""
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     item = ContentItem(
         owner_user_id=uuid4(), type="post", slug="item", title="Item", status="draft"
     )

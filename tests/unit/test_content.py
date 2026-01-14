@@ -13,8 +13,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.core.entities import ContentBlock, ContentItem
-from src.core.services.content import (
+from src.components.content import (
     ContentService,
     ContentStateMachine,
     create_content_service,
@@ -22,6 +21,7 @@ from src.core.services.content import (
     validate_content_fields,
     validate_publish_at,
 )
+from src.core.entities import ContentBlock, ContentItem
 
 # --- Mock Repository ---
 

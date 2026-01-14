@@ -12,6 +12,15 @@ from ._impl import (
     RedirectConfig,
     RedirectService,
     RedirectValidationError,
+    create_redirect_service,
+    detect_loop,
+    is_absolute_url,
+    is_internal_path,
+    normalize_path,
+    validate_chain_length,
+    validate_collision,
+    validate_source_path,
+    validate_target_path,
 )
 from .component import (
     run,
@@ -63,7 +72,16 @@ __all__ = [
     "RedirectRepoPort",
     "RouteCheckerPort",
     "RulesPort",
-    # Legacy _impl re-exports
+    # _impl re-exports
     "RedirectConfig",
     "RedirectService",
+    "create_redirect_service",
+    "detect_loop",
+    "is_absolute_url",
+    "is_internal_path",
+    "normalize_path",
+    "validate_chain_length",
+    "validate_collision",
+    "validate_source_path",
+    "validate_target_path",
 ]

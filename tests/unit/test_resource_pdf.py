@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.core.services.resource_pdf import (
+from src.components.render import (
     ResourcePDF,
     ResourcePDFService,
     validate_pinned_policy,

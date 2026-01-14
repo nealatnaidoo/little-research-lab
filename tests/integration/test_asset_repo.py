@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -36,8 +36,8 @@ def user_id(db_path):
             "Owner",
             "hash",
             "active",
-            datetime.utcnow().isoformat(),
-            datetime.utcnow().isoformat(),
+            datetime.now(UTC).isoformat(),
+            datetime.now(UTC).isoformat(),
         ),
     )
     conn.commit()
@@ -56,7 +56,7 @@ def test_save_and_get_asset(repo, user_id):
         storage_path="assets/deadbeef.png",
         visibility="private",
         created_by_user_id=user_id,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
 
     repo.save(asset)

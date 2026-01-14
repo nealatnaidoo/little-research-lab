@@ -5,6 +5,13 @@ Spec refs: E5.2
 """
 
 # Re-exports from _impl for backwards compatibility
+# Re-exports from legacy scheduler service (pending full migration)
+from src.core.services.scheduler import (
+    calculate_next_retry,
+    check_idempotency,
+    create_scheduler_service,
+)
+
 from ._impl import (
     SchedulerConfig,
     SchedulerError,
@@ -69,4 +76,8 @@ __all__ = [
     "SchedulerError",
     "SchedulerService",
     "create_publish_job",
+    # Legacy service re-exports
+    "calculate_next_retry",
+    "check_idempotency",
+    "create_scheduler_service",
 ]

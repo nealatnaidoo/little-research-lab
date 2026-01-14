@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.routes import admin_analytics
-from src.core.services.analytics_aggregate import (
+from src.components.analytics import (
     AggregateInput,
     AggregateService,
     InMemoryAggregateRepo,

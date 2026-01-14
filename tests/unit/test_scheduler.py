@@ -15,7 +15,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from src.core.services.scheduler import (
+from src.components.scheduler import (
     PublishJob,
     SchedulerConfig,
     SchedulerService,

@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.services.audit import (
+from src.components.audit import (
     AuditAction,
     AuditService,
     EntityType,

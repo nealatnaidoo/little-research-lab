@@ -13,8 +13,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.core.entities import ContentItem, SiteSettings
-from src.core.services.render import (
+from src.components.render import (
     ImageInfo,
     PageMetadata,
     RenderService,
@@ -24,6 +23,7 @@ from src.core.services.render import (
     resolve_og_image,
     truncate_description,
 )
+from src.core.entities import ContentItem, SiteSettings
 
 
 @pytest.fixture

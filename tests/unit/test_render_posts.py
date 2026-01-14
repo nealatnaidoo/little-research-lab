@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.services.render_posts import (
+from src.components.render_posts import (
     PostRenderer,
     RenderConfig,
     render_blockquote,

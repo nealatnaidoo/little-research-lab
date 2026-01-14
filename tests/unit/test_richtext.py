@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core.services.richtext import (
+from src.components.richtext import (
     RichTextConfig,
     RichTextService,
     build_link_rel,
