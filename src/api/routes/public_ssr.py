@@ -12,10 +12,16 @@ Test assertions:
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, Response
 
-from src.api.deps import get_content_repo, get_site_settings_repo, get_version_repo
+from src.api.deps import (
+    get_content_repo,
+    get_site_settings_repo,
+    get_version_repo,
+    require_published,
+)
+from src.components.C2_PublicTemplates import SitemapEntry, filter_sitemap_entries
 from src.components.render import PageMetadata, RenderService, create_render_service
 from src.components.settings import SettingsService
 
@@ -165,14 +171,9 @@ def ssr_post(
     """
     settings = settings_service.get()
 
-    # Get content by slug
+    # Get content by slug and enforce published-only (R2, T-0046)
     content = content_repo.get_by_slug(slug, "post")
-    if not content:
-        raise HTTPException(status_code=404, detail="Post not found")
-
-    # Only serve published content
-    if content.status != "published":
-        raise HTTPException(status_code=404, detail="Post not found")
+    content = require_published(content)
 
     metadata = render_service.build_content_metadata(settings, content)
 
@@ -209,14 +210,9 @@ def ssr_page(
     """
     settings = settings_service.get()
 
-    # Get content by slug
+    # Get content by slug and enforce published-only (R2, T-0046)
     content = content_repo.get_by_slug(slug, "page")
-    if not content:
-        raise HTTPException(status_code=404, detail="Page not found")
-
-    # Only serve published content
-    if content.status != "published":
-        raise HTTPException(status_code=404, detail="Page not found")
+    content = require_published(content)
 
     metadata = render_service.build_content_metadata(settings, content)
 
@@ -352,14 +348,9 @@ def ssr_resource_pdf(
     """
     settings = settings_service.get()
 
-    # Get resource by slug (resource_pdf type)
+    # Get resource by slug and enforce published-only (R2, T-0046)
     content = content_repo.get_by_slug(slug, "resource_pdf")
-    if not content:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    # Only serve published resources
-    if content.status != "published":
-        raise HTTPException(status_code=404, detail="Resource not found")
+    content = require_published(content)
 
     # Build page metadata
     metadata = render_service.build_content_metadata(settings, content)
@@ -414,3 +405,104 @@ def ssr_resource_pdf(
 
     html = render_ssr_page(metadata, body)
     return HTMLResponse(content=html, status_code=200)
+
+
+# --- Sitemap (R2, T-0046) ---
+
+
+def _render_sitemap_xml(entries: list[SitemapEntry]) -> str:
+    """
+    Render sitemap entries to XML string.
+
+    Args:
+        entries: List of SitemapEntry objects
+
+    Returns:
+        Valid sitemap.xml content
+    """
+    xml_parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+
+    for entry in entries:
+        xml_parts.append("  <url>")
+        xml_parts.append(f"    <loc>{_escape_html(entry.loc)}</loc>")
+        if entry.lastmod:
+            xml_parts.append(f"    <lastmod>{entry.lastmod}</lastmod>")
+        if entry.changefreq:
+            xml_parts.append(f"    <changefreq>{entry.changefreq}</changefreq>")
+        if entry.priority is not None:
+            xml_parts.append(f"    <priority>{entry.priority}</priority>")
+        xml_parts.append("  </url>")
+
+    xml_parts.append("</urlset>")
+    return "\n".join(xml_parts)
+
+
+@router.get(
+    "/sitemap.xml",
+    response_class=Response,
+    summary="XML Sitemap",
+    description="Sitemap for search engines (R2, T-0046). Only published content included.",
+)
+def sitemap_xml(
+    request: Request,
+    content_repo: Any = Depends(get_content_repo),
+) -> Response:
+    """
+    Generate sitemap.xml with published content only (R2, T-0046).
+
+    Implements invariant R2: Draft and future scheduled content
+    must never be publicly served or cached, including in sitemap.
+
+    Returns XML sitemap with:
+    - Published posts at /p/{slug}
+    - Published resources at /r/{slug}
+    - Published pages at /{slug}
+
+    Excludes:
+    - Draft content
+    - Scheduled content (future publish dates)
+    - Archived content
+    """
+    base_url = str(request.base_url).rstrip("/")
+
+    # Get all content items with status and timestamps
+    all_items = content_repo.list_items({})
+
+    # Build entry tuples: (slug, content_type, published_at, updated_at)
+    entry_tuples: list[tuple[str, str, Any, Any]] = []
+    for item in all_items:
+        # Only include items that are published (filter_sitemap_entries will
+        # also verify, but pre-filter to avoid processing unnecessary items)
+        if item.status == "published":
+            entry_tuples.append((
+                item.slug,
+                item.type,
+                getattr(item, "published_at", None),
+                getattr(item, "updated_at", None),
+            ))
+
+    # Filter entries using the R2-compliant filter function
+    sitemap_entries = filter_sitemap_entries(entry_tuples, base_url)
+
+    # Add homepage
+    sitemap_entries.insert(
+        0,
+        SitemapEntry(
+            loc=f"{base_url}/",
+            changefreq="daily",
+            priority=1.0,
+        ),
+    )
+
+    xml_content = _render_sitemap_xml(sitemap_entries)
+
+    return Response(
+        content=xml_content,
+        media_type="application/xml",
+        headers={
+            "Cache-Control": "public, max-age=3600",  # 1 hour cache
+        },
+    )

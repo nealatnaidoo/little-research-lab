@@ -694,3 +694,111 @@ class TestResourcePDFIntegration:
         """Nonexistent resource returns None."""
         content = resource_content_repo.get_by_slug("does-not-exist", "resource_pdf")
         assert content is None
+
+
+# --- Sitemap Tests (R2, T-0046) ---
+
+
+class TestSitemapXML:
+    """Tests for sitemap.xml endpoint (R2, T-0046)."""
+
+    def test_sitemap_includes_published_content(self) -> None:
+        """TA-0000: Sitemap includes published posts."""
+        from src.api.routes.public_ssr import _render_sitemap_xml
+        from src.components.C2_PublicTemplates import SitemapEntry
+
+        entries = [
+            SitemapEntry(loc="https://example.com/p/test-post", lastmod="2024-01-15"),
+        ]
+        xml = _render_sitemap_xml(entries)
+
+        assert '<?xml version="1.0" encoding="UTF-8"?>' in xml
+        assert "<urlset" in xml
+        assert "<loc>https://example.com/p/test-post</loc>" in xml
+        assert "<lastmod>2024-01-15</lastmod>" in xml
+
+    def test_sitemap_xml_structure(self) -> None:
+        """Sitemap XML has valid structure."""
+        from src.api.routes.public_ssr import _render_sitemap_xml
+        from src.components.C2_PublicTemplates import SitemapEntry
+
+        entries = [
+            SitemapEntry(
+                loc="https://example.com/",
+                changefreq="daily",
+                priority=1.0,
+            ),
+            SitemapEntry(
+                loc="https://example.com/p/post-1",
+                lastmod="2024-06-15",
+                changefreq="weekly",
+                priority=0.8,
+            ),
+        ]
+        xml = _render_sitemap_xml(entries)
+
+        # Valid XML declaration
+        assert xml.startswith('<?xml version="1.0" encoding="UTF-8"?>')
+        # Proper namespace
+        assert 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in xml
+        # All entries present
+        assert xml.count("<url>") == 2
+        assert xml.count("</url>") == 2
+        # Priority formatting
+        assert "<priority>1.0</priority>" in xml
+        assert "<priority>0.8</priority>" in xml
+
+    def test_sitemap_excludes_draft_content(self) -> None:
+        """R2: Sitemap must exclude draft content."""
+        from datetime import UTC, datetime
+
+        from src.components.C2_PublicTemplates import filter_sitemap_entries
+
+        now = datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
+
+        # Entries: (slug, type, published_at, updated_at)
+        # Draft has no published_at
+        entries = [
+            ("published-post", "post", now, now),
+            ("draft-post", "post", None, now),  # Draft - no published_at
+        ]
+
+        result = filter_sitemap_entries(entries, "https://example.com", now)
+
+        assert len(result) == 1
+        assert "published-post" in result[0].loc
+        assert all("draft-post" not in e.loc for e in result)
+
+    def test_sitemap_excludes_future_dated_content(self) -> None:
+        """R2: Sitemap must exclude content with future publish dates."""
+        from datetime import UTC, datetime, timedelta
+
+        from src.components.C2_PublicTemplates import filter_sitemap_entries
+
+        now = datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
+        future = now + timedelta(days=7)
+
+        entries = [
+            ("current-post", "post", now, now),
+            ("future-post", "post", future, future),  # Future dated
+        ]
+
+        result = filter_sitemap_entries(entries, "https://example.com", now)
+
+        assert len(result) == 1
+        assert "current-post" in result[0].loc
+        assert all("future-post" not in e.loc for e in result)
+
+    def test_sitemap_escapes_special_characters(self) -> None:
+        """Sitemap XML properly escapes special characters."""
+        from src.api.routes.public_ssr import _render_sitemap_xml
+        from src.components.C2_PublicTemplates import SitemapEntry
+
+        entries = [
+            SitemapEntry(loc="https://example.com/p/test&post"),
+        ]
+        xml = _render_sitemap_xml(entries)
+
+        # & should be escaped to &amp;
+        assert "&amp;" in xml
+        assert "test&post" not in xml  # Raw & should not appear
