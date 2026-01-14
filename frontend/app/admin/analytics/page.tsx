@@ -123,9 +123,19 @@ export default function AnalyticsPage() {
                         <MousePointer className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {/* Placeholder for future engagement metric */}
-                        <div className="text-2xl font-bold">-</div>
-                        <p className="text-xs text-muted-foreground">Coming soon</p>
+                        {data.engagement ? (
+                            <>
+                                <div className="text-2xl font-bold">{data.engagement.engaged_sessions.toLocaleString()}</div>
+                                <p className="text-xs text-muted-foreground">
+                                    {(data.engagement.engagement_rate * 100).toFixed(1)}% engagement rate
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-2xl font-bold">0</div>
+                                <p className="text-xs text-muted-foreground">No engagement data</p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </div>

@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { EngagementTotalsResponse } from './EngagementTotalsResponse';
 import type { TimeSeriesResponse } from './TimeSeriesResponse';
 import type { TopContentResponse } from './TopContentResponse';
 import type { TopReferrersResponse } from './TopReferrersResponse';
@@ -18,5 +19,6 @@ export type DashboardResponse = {
     top_content: TopContentResponse;
     top_sources: TopSourcesResponse;
     top_referrers: TopReferrersResponse;
+    engagement?: EngagementTotalsResponse | null;
 };
 

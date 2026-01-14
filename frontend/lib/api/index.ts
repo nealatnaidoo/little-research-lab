@@ -21,6 +21,7 @@ export { ContentTransitionRequest } from './models/ContentTransitionRequest';
 export type { ContentUpdateRequest } from './models/ContentUpdateRequest';
 export type { CreateRedirectRequest } from './models/CreateRedirectRequest';
 export type { DashboardResponse } from './models/DashboardResponse';
+export type { EngagementTotalsResponse } from './models/EngagementTotalsResponse';
 export type { EntityHistoryResponse } from './models/EntityHistoryResponse';
 export type { ErrorResponse } from './models/ErrorResponse';
 export type { HTTPValidationError } from './models/HTTPValidationError';

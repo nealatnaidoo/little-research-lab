@@ -3,14 +3,16 @@ Admin Analytics API (E6.4).
 
 Provides endpoints for querying analytics data.
 
-Spec refs: E6.4, TA-0041, TA-0042
+Spec refs: E6.4, TA-0041, TA-0042, E14
 Test assertions:
 - TA-0041: Dashboard queries return correct aggregated data
 - TA-0042: Analytics data can be queried by time range and filters
+- E14: Engagement data queries
 """
 
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -20,6 +22,8 @@ from src.components.analytics._aggregate import (
     BucketType,
     InMemoryAggregateRepo,
 )
+from src.adapters.sqlite_db import SQLiteEngagementRepo
+from src.components.engagement import EngagementRepoPort
 
 router = APIRouter()
 
@@ -92,6 +96,41 @@ class TopReferrersResponse(BaseModel):
     items: list[TopReferrerItem]
 
 
+class EngagementTotalsResponse(BaseModel):
+    """Engagement totals response model."""
+
+    total_sessions: int
+    engaged_sessions: int
+    engagement_rate: float  # 0.0 to 1.0
+
+
+class EngagementDistributionItem(BaseModel):
+    """Engagement distribution item."""
+
+    time_bucket: str
+    scroll_bucket: str
+    count: int
+
+
+class EngagementDistributionResponse(BaseModel):
+    """Engagement distribution response model."""
+
+    items: list[EngagementDistributionItem]
+
+
+class TopEngagedContentItem(BaseModel):
+    """Top engaged content item."""
+
+    content_id: str
+    engaged_count: int
+
+
+class TopEngagedContentResponse(BaseModel):
+    """Top engaged content response model."""
+
+    items: list[TopEngagedContentItem]
+
+
 class DashboardResponse(BaseModel):
     """Dashboard summary response."""
 
@@ -102,6 +141,7 @@ class DashboardResponse(BaseModel):
     top_content: TopContentResponse
     top_sources: TopSourcesResponse
     top_referrers: TopReferrersResponse
+    engagement: EngagementTotalsResponse | None = None
 
 
 # --- Dependencies ---
@@ -110,10 +150,20 @@ class DashboardResponse(BaseModel):
 _aggregate_repo = InMemoryAggregateRepo()
 _aggregate_service = AggregateService(repo=_aggregate_repo)
 
+# Database path for engagement repo
+_db_path = os.environ.get("DATABASE_URL", "lrl.db")
+if _db_path.startswith("sqlite:///"):
+    _db_path = _db_path.replace("sqlite:///", "")
+
 
 def get_aggregate_service() -> AggregateService:
     """Get aggregate service dependency."""
     return _aggregate_service
+
+
+def get_engagement_repo() -> EngagementRepoPort:
+    """Get engagement repo dependency."""
+    return SQLiteEngagementRepo(_db_path)
 
 
 def reset_aggregate_service() -> None:
@@ -386,11 +436,12 @@ def get_dashboard(
     end: str | None = Query(None, description="End datetime (ISO format)"),
     bucket_type: str = Query("day", description="Bucket type for time series"),
     service: AggregateService = Depends(get_aggregate_service),
+    engagement_repo: EngagementRepoPort = Depends(get_engagement_repo),
 ) -> DashboardResponse:
     """
-    Get complete dashboard data (TA-0041, TA-0042).
+    Get complete dashboard data (TA-0041, TA-0042, E14).
 
-    Returns totals, time series, top content, sources, and referrers.
+    Returns totals, time series, top content, sources, referrers, and engagement.
     """
     if start and end:
         start_dt = parse_datetime(start)
@@ -433,6 +484,25 @@ def get_dashboard(
         end=end_dt,
         limit=5,
     )
+
+    # Get engagement data (E14)
+    engagement_data = None
+    try:
+        engagement_totals = engagement_repo.get_totals(
+            start_date=start_dt.date(),
+            end_date=end_dt.date(),
+        )
+        total_sessions = engagement_totals.total_sessions
+        engaged_sessions = engagement_totals.engaged_sessions
+        engagement_rate = engaged_sessions / total_sessions if total_sessions > 0 else 0.0
+        engagement_data = EngagementTotalsResponse(
+            total_sessions=total_sessions,
+            engaged_sessions=engaged_sessions,
+            engagement_rate=engagement_rate,
+        )
+    except Exception:
+        # Don't fail dashboard if engagement data fails
+        pass
 
     return DashboardResponse(
         period_start=start_dt.isoformat(),
@@ -483,4 +553,115 @@ def get_dashboard(
                 for item in top_referrers
             ],
         ),
+        engagement=engagement_data,
+    )
+
+
+@router.get("/engagement", response_model=EngagementTotalsResponse)
+def get_engagement_totals(
+    start: str | None = Query(None, description="Start datetime (ISO format)"),
+    end: str | None = Query(None, description="End datetime (ISO format)"),
+    content_id: str | None = Query(None, description="Filter by content ID"),
+    engagement_repo: EngagementRepoPort = Depends(get_engagement_repo),
+) -> EngagementTotalsResponse:
+    """
+    Get engagement totals for a time range (E14).
+
+    Returns total and engaged session counts.
+    """
+    if start and end:
+        start_dt = parse_datetime(start)
+        end_dt = parse_datetime(end)
+    else:
+        start_dt, end_dt = get_default_time_range()
+
+    content_uuid = UUID(content_id) if content_id else None
+
+    totals = engagement_repo.get_totals(
+        start_date=start_dt.date(),
+        end_date=end_dt.date(),
+        content_id=content_uuid,
+    )
+
+    total_sessions = totals.total_sessions
+    engaged_sessions = totals.engaged_sessions
+    engagement_rate = engaged_sessions / total_sessions if total_sessions > 0 else 0.0
+
+    return EngagementTotalsResponse(
+        total_sessions=total_sessions,
+        engaged_sessions=engaged_sessions,
+        engagement_rate=engagement_rate,
+    )
+
+
+@router.get("/engagement/distribution", response_model=EngagementDistributionResponse)
+def get_engagement_distribution(
+    start: str | None = Query(None, description="Start datetime (ISO format)"),
+    end: str | None = Query(None, description="End datetime (ISO format)"),
+    content_id: str | None = Query(None, description="Filter by content ID"),
+    engagement_repo: EngagementRepoPort = Depends(get_engagement_repo),
+) -> EngagementDistributionResponse:
+    """
+    Get engagement distribution by time and scroll buckets (E14).
+
+    Returns counts per bucket combination.
+    """
+    if start and end:
+        start_dt = parse_datetime(start)
+        end_dt = parse_datetime(end)
+    else:
+        start_dt, end_dt = get_default_time_range()
+
+    content_uuid = UUID(content_id) if content_id else None
+
+    distribution = engagement_repo.get_distribution(
+        start_date=start_dt.date(),
+        end_date=end_dt.date(),
+        content_id=content_uuid,
+    )
+
+    return EngagementDistributionResponse(
+        items=[
+            EngagementDistributionItem(
+                time_bucket=item["time_bucket"],
+                scroll_bucket=item["scroll_bucket"],
+                count=item["count"],
+            )
+            for item in distribution
+        ],
+    )
+
+
+@router.get("/engagement/top-content", response_model=TopEngagedContentResponse)
+def get_top_engaged_content(
+    start: str | None = Query(None, description="Start datetime (ISO format)"),
+    end: str | None = Query(None, description="End datetime (ISO format)"),
+    limit: int = Query(10, ge=1, le=100, description="Number of results"),
+    engagement_repo: EngagementRepoPort = Depends(get_engagement_repo),
+) -> TopEngagedContentResponse:
+    """
+    Get top content by engaged sessions (E14).
+
+    Returns content IDs sorted by engaged session count.
+    """
+    if start and end:
+        start_dt = parse_datetime(start)
+        end_dt = parse_datetime(end)
+    else:
+        start_dt, end_dt = get_default_time_range()
+
+    top = engagement_repo.get_top_engaged_content(
+        start_date=start_dt.date(),
+        end_date=end_dt.date(),
+        limit=limit,
+    )
+
+    return TopEngagedContentResponse(
+        items=[
+            TopEngagedContentItem(
+                content_id=str(item["content_id"]),
+                engaged_count=item["engaged_count"],
+            )
+            for item in top
+        ],
     )

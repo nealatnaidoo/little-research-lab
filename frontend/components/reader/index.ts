@@ -2,3 +2,4 @@ export { ReaderControls, FONT_SIZE_CLASSES, WIDTH_CLASSES, loadPreferences, DEFA
 export type { ReaderPreferences, FontSize, ReadingWidth } from "./ReaderControls"
 export { ReadingProgressBar } from "./ReadingProgressBar"
 export { ArticleReader } from "./ArticleReader"
+export { EngagementTracker } from "./EngagementTracker"

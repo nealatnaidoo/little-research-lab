@@ -3,7 +3,7 @@ import Link from "next/link";
 import { OpenAPI, PublicService, ContentItemResponse } from "@/lib/api";
 import { BlockRenderer } from "@/components/content/block-renderer";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { ArticleReader } from "@/components/reader";
+import { ArticleReader, EngagementTracker } from "@/components/reader";
 import { ArrowLeft, Clock } from "lucide-react";
 
 // Force dynamic rendering - fetch fresh post data on each request
@@ -40,6 +40,9 @@ export default async function PostPage({ params }: PageProps) {
 
     return (
         <PublicLayout>
+            {/* Track engagement (time on page + scroll depth) */}
+            <EngagementTracker contentId={post.id} path={`/p/${slug}`} />
+
             <ArticleReader className="container mx-auto px-4 py-12">
                 <Link
                     href="/"

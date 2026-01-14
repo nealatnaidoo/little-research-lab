@@ -21,8 +21,20 @@ from src.components.analytics import (
     IngestionConfig,
     InMemoryEventStore,
 )
+from src.components.engagement import (
+    CalculateEngagementInput,
+    run_calculate as calculate_engagement,
+)
+from src.adapters.sqlite_db import SQLiteEngagementRepo
+from uuid import UUID
+import os
 
 router = APIRouter()
+
+# Database path for engagement repo
+_db_path = os.environ.get("DATABASE_URL", "lrl.db")
+if _db_path.startswith("sqlite:///"):
+    _db_path = _db_path.replace("sqlite:///", "")
 
 
 # --- Request/Response Models ---
@@ -45,6 +57,9 @@ class EventRequest(BaseModel):
     utm_content: str | None = Field(None, description="UTM content")
     utm_term: str | None = Field(None, description="UTM term")
     ua_class: str | None = Field(None, description="User agent class")
+    # Engagement tracking fields (E14)
+    time_on_page: int | float | None = Field(None, description="Time on page in seconds")
+    scroll_depth: int | float | None = Field(None, description="Max scroll depth 0-100%")
 
     model_config = ConfigDict(extra="allow")
 
@@ -143,6 +158,20 @@ def ingest_event(
                 ],
             },
         )
+
+    # Process engagement data if present (E14)
+    if body.time_on_page is not None and body.scroll_depth is not None and body.content_id:
+        try:
+            engagement_repo = SQLiteEngagementRepo(_db_path)
+            engagement_input = CalculateEngagementInput(
+                content_id=UUID(body.content_id),
+                time_on_page_seconds=float(body.time_on_page),
+                scroll_depth_percent=float(body.scroll_depth),
+            )
+            calculate_engagement(engagement_input, repo=engagement_repo)
+        except Exception:
+            # Don't fail the request if engagement tracking fails
+            pass
 
     return EventResponse(ok=True)
 
