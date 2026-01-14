@@ -43,6 +43,7 @@ from src.api.routes import (  # noqa: E402
     admin_audit,
     admin_links,
     admin_redirects,
+    admin_resources,
     admin_schedule,
     admin_settings,
     assets,
@@ -63,6 +64,7 @@ app.include_router(admin_analytics.router, prefix="/api/admin/analytics", tags=[
 app.include_router(admin_audit.router, prefix="/api/admin/audit", tags=["Admin Audit"])
 app.include_router(admin_links.router, prefix="/api/admin", tags=["Admin Links"])
 app.include_router(admin_redirects.router, prefix="/api/admin/redirects", tags=["Admin Redirects"])
+app.include_router(admin_resources.router, prefix="/api/admin/resources", tags=["Admin Resources"])
 # admin_assets router removed
 app.include_router(content.router, prefix="/api/content", tags=["Content"])
 app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])

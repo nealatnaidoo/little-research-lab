@@ -271,6 +271,48 @@ def get_version_repo() -> InMemoryVersionRepo:
     return _version_repo_instance
 
 
+# --- Resource PDF Repository (E3.1) ---
+
+
+class InMemoryResourcePDFRepo:
+    """In-memory repository for PDF resources."""
+
+    def __init__(self) -> None:
+        self._resources: dict[str, AnyType] = {}
+
+    def get_by_id(self, resource_id: UUID) -> AnyType:
+        return self._resources.get(str(resource_id))
+
+    def get_by_slug(self, slug: str) -> AnyType:
+        for r in self._resources.values():
+            if r.slug == slug:
+                return r
+        return None
+
+    def save(self, resource: AnyType) -> AnyType:
+        self._resources[str(resource.id)] = resource
+        return resource
+
+    def delete(self, resource_id: UUID) -> None:
+        key = str(resource_id)
+        if key in self._resources:
+            del self._resources[key]
+
+    def list_all(self) -> list[AnyType]:
+        return list(self._resources.values())
+
+
+_resource_pdf_repo_instance: InMemoryResourcePDFRepo | None = None
+
+
+def get_resource_pdf_repo() -> InMemoryResourcePDFRepo:
+    """Get resource PDF repo singleton."""
+    global _resource_pdf_repo_instance
+    if _resource_pdf_repo_instance is None:
+        _resource_pdf_repo_instance = InMemoryResourcePDFRepo()
+    return _resource_pdf_repo_instance
+
+
 # --- Public Visibility Guard (R1, T-0046) ---
 
 

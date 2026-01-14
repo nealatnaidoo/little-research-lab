@@ -8,7 +8,8 @@ from pydantic import BaseModel
 BlockType = Literal["markdown", "image", "chart", "embed", "divider"]
 ContentStatus = Literal["draft", "scheduled", "published", "archived"]
 Visibility = Literal["public", "unlisted", "private"]
-ContentType = Literal["post", "page"]
+ContentType = Literal["post", "page", "resource_pdf"]
+PinnedPolicy = Literal["pinned", "latest"]
 
 
 # --- Content Blocks ---
@@ -98,3 +99,57 @@ class UserCreateRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     roles: list[str] | None = None
     status: str | None = None  # "active", "disabled"
+
+
+# --- Resource PDF (E3.1) ---
+
+
+class ResourcePDFCreateRequest(BaseModel):
+    """Create a new PDF resource."""
+
+    title: str
+    slug: str
+    summary: str | None = None
+    pdf_asset_id: UUID | None = None
+    pdf_version_id: UUID | None = None
+    pinned_policy: PinnedPolicy = "latest"
+    display_title: str | None = None
+    download_filename: str | None = None
+
+
+class ResourcePDFUpdateRequest(BaseModel):
+    """Update an existing PDF resource."""
+
+    title: str | None = None
+    slug: str | None = None
+    summary: str | None = None
+    pdf_asset_id: UUID | None = None
+    pdf_version_id: UUID | None = None
+    pinned_policy: PinnedPolicy | None = None
+    display_title: str | None = None
+    download_filename: str | None = None
+
+
+class ResourcePDFResponse(BaseModel):
+    """PDF resource response."""
+
+    id: UUID
+    title: str
+    slug: str
+    summary: str
+    status: ContentStatus
+    owner_user_id: UUID
+
+    # PDF-specific fields
+    pdf_asset_id: UUID | None = None
+    pdf_version_id: UUID | None = None
+    pinned_policy: PinnedPolicy
+    display_title: str | None = None
+    download_filename: str | None = None
+
+    created_at: datetime
+    updated_at: datetime
+    published_at: datetime | None = None
+
+    class Config:
+        from_attributes = True

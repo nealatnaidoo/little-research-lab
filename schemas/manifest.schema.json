@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://creator-publisher-v4/manifest.schema.json",
+  "title": "Component Manifest Schema",
+  "description": "JSON Schema for creator-publisher-v4 component manifests",
+  "type": "object",
+  "required": ["schema_version", "project_slug", "generated_at", "components", "ports"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the manifest schema"
+    },
+    "project_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Project identifier"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of manifest generation"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      },
+      "description": "List of atomic components"
+    },
+    "sub_components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sub_component"
+      },
+      "description": "Optional list of sub-components"
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/port"
+      },
+      "description": "List of ports (abstractions for I/O)"
+    },
+    "shell": {
+      "type": "object",
+      "properties": {
+        "http": {
+          "$ref": "#/$defs/shell_layer"
+        },
+        "ui": {
+          "$ref": "#/$defs/shell_layer"
+        }
+      },
+      "description": "Shell layer definitions"
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["id", "name", "path", "contract", "status", "spec_refs", "ports"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^C[0-9]+$",
+          "description": "Component identifier (C1, C2, etc.)"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z]+Component$",
+          "description": "Component name in PascalCase ending with Component"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^src/components/",
+          "description": "Path to component directory"
+        },
+        "contract": {
+          "type": "string",
+          "pattern": "\\.md$",
+          "description": "Path to contract.md file"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "in_progress", "implemented", "deprecated"],
+          "description": "Implementation status"
+        },
+        "legacy_path": {
+          "type": "string",
+          "description": "Optional path to legacy implementation"
+        },
+        "spec_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to spec sections (E1, TA-E1.1-01, R1, etc.)"
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of ports this component depends on"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^T-[0-9]+$"
+          },
+          "description": "Related task IDs"
+        }
+      }
+    },
+    "sub_component": {
+      "type": "object",
+      "required": ["id", "name", "path", "contract", "status", "parent"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^C[0-9]+-sub$",
+          "description": "Sub-component identifier"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z]+Component$",
+          "description": "Sub-component name"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^src/components/",
+          "description": "Path to sub-component directory"
+        },
+        "contract": {
+          "type": "string",
+          "pattern": "\\.md$",
+          "description": "Path to contract.md file"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "in_progress", "implemented", "deprecated"]
+        },
+        "legacy_path": {
+          "type": "string"
+        },
+        "parent": {
+          "type": "string",
+          "pattern": "^C[0-9]+$",
+          "description": "Parent component ID"
+        }
+      }
+    },
+    "port": {
+      "type": "object",
+      "required": ["id", "name", "path", "adapters", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^P[0-9]+$",
+          "description": "Port identifier (P1, P2, etc.)"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z]+Port$",
+          "description": "Port name ending with Port"
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to port definition"
+        },
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of adapter implementations"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "in_progress", "implemented", "deprecated"]
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^T-[0-9]+$"
+          }
+        }
+      }
+    },
+    "shell_layer": {
+      "type": "object",
+      "required": ["path", "status"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "in_progress", "implemented", "deprecated"]
+        }
+      }
+    }
+  }
+}

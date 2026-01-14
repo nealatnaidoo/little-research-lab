@@ -57,11 +57,15 @@ export type { UserResponse } from './models/UserResponse';
 export type { UserUpdateRequest } from './models/UserUpdateRequest';
 export type { ValidationError } from './models/ValidationError';
 export type { ValidationErrorResponse } from './models/ValidationErrorResponse';
+export type { ResourcePDFResponse } from './models/ResourcePDFResponse';
+export type { ResourcePDFCreateRequest } from './models/ResourcePDFCreateRequest';
+export type { ResourcePDFUpdateRequest } from './models/ResourcePDFUpdateRequest';
 
 export { AdminAnalyticsService } from './services/AdminAnalyticsService';
 export { AdminAuditService } from './services/AdminAuditService';
 export { AdminLinksService } from './services/AdminLinksService';
 export { AdminRedirectsService } from './services/AdminRedirectsService';
+export { AdminResourcesService } from './services/AdminResourcesService';
 export { AdminScheduleService } from './services/AdminScheduleService';
 export { AdminSettingsService } from './services/AdminSettingsService';
 export { AssetsService } from './services/AssetsService';
