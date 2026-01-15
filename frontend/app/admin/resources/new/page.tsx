@@ -24,7 +24,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { AdminResourcesService, AssetsService, type AssetResponse } from "@/lib/api"
+import {
+    AdminResourcesService,
+    AssetsService,
+    type AssetResponse,
+    ResourcePDFCreateRequest,
+} from "@/lib/api"
 
 export default function NewResourcePage() {
     const router = useRouter()
@@ -37,7 +42,9 @@ export default function NewResourcePage() {
     const [slug, setSlug] = useState("")
     const [summary, setSummary] = useState("")
     const [pdfAssetId, setPdfAssetId] = useState<string>("")
-    const [pinnedPolicy, setPinnedPolicy] = useState<"latest" | "pinned">("latest")
+    const [pinnedPolicy, setPinnedPolicy] = useState<ResourcePDFCreateRequest.pinned_policy>(
+        ResourcePDFCreateRequest.pinned_policy.LATEST
+    )
     const [displayTitle, setDisplayTitle] = useState("")
     const [downloadFilename, setDownloadFilename] = useState("")
 
@@ -89,7 +96,7 @@ export default function NewResourcePage() {
 
         setLoading(true)
         try {
-            const resource = await AdminResourcesService.createResource({
+            const resource = await AdminResourcesService.createResourceApiAdminResourcesPost({
                 title: title.trim(),
                 slug: slug.trim(),
                 summary: summary.trim() || undefined,
@@ -220,16 +227,16 @@ export default function NewResourcePage() {
                                     <Label htmlFor="pinned-policy">Version Policy</Label>
                                     <Select
                                         value={pinnedPolicy}
-                                        onValueChange={(v) => setPinnedPolicy(v as "latest" | "pinned")}
+                                        onValueChange={(v) => setPinnedPolicy(v as ResourcePDFCreateRequest.pinned_policy)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="latest">
+                                            <SelectItem value={ResourcePDFCreateRequest.pinned_policy.LATEST}>
                                                 Always Latest - Automatically use newest version
                                             </SelectItem>
-                                            <SelectItem value="pinned" disabled>
+                                            <SelectItem value={ResourcePDFCreateRequest.pinned_policy.PINNED} disabled>
                                                 Pinned - Use a specific version (coming soon)
                                             </SelectItem>
                                         </SelectContent>

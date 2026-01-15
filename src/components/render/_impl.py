@@ -362,3 +362,240 @@ def create_render_service(
         Configured RenderService
     """
     return RenderService(base_url, default_og_image_url, routing_config)
+
+
+# --- Social Meta Tag Generation (E15.3) ---
+
+
+@dataclass
+class ImageDimensionConfig:
+    """Configuration for image dimension validation."""
+
+    min_width: int
+    min_height: int
+
+
+DEFAULT_TWITTER_IMAGE_CONFIG = ImageDimensionConfig(min_width=280, min_height=150)
+DEFAULT_FACEBOOK_IMAGE_CONFIG = ImageDimensionConfig(min_width=200, min_height=200)
+
+
+def validate_image_dimensions(
+    width: int | None,
+    height: int | None,
+    min_width: int,
+    min_height: int,
+) -> tuple[bool, str | None]:
+    """
+    Validate image dimensions meet minimum requirements.
+
+    Args:
+        width: Image width in pixels (None if unknown)
+        height: Image height in pixels (None if unknown)
+        min_width: Minimum required width
+        min_height: Minimum required height
+
+    Returns:
+        Tuple of (is_valid, warning_message)
+    """
+    if width is None or height is None:
+        # Can't validate without dimensions, assume valid
+        return True, None
+
+    if width < min_width or height < min_height:
+        return False, f"Image dimensions {width}x{height} below minimum {min_width}x{min_height}"
+
+    return True, None
+
+
+def generate_twitter_card_meta(
+    title: str,
+    description: str,
+    image_url: str | None = None,
+    image_alt: str | None = None,
+    image_width: int | None = None,
+    image_height: int | None = None,
+    card_type: str = "summary_large_image",
+    min_image_width: int = 280,
+    min_image_height: int = 150,
+) -> tuple[dict[str, str], list[str]]:
+    """
+    Generate Twitter Card meta tags (TA-0072).
+
+    Args:
+        title: Content title
+        description: Content description
+        image_url: Optional image URL
+        image_alt: Optional image alt text
+        image_width: Optional image width for validation
+        image_height: Optional image height for validation
+        card_type: Twitter card type (summary, summary_large_image)
+        min_image_width: Minimum image width (default 280)
+        min_image_height: Minimum image height (default 150)
+
+    Returns:
+        Tuple of (meta_tags_dict, warnings_list)
+    """
+    warnings: list[str] = []
+    tags: dict[str, str] = {
+        "twitter:card": card_type,
+        "twitter:title": title[:70] if len(title) > 70 else title,  # Twitter title limit
+        "twitter:description": description[:200] if len(description) > 200 else description,
+    }
+
+    if image_url:
+        # Validate dimensions if provided
+        is_valid, warning = validate_image_dimensions(
+            image_width, image_height, min_image_width, min_image_height
+        )
+        if not is_valid and warning:
+            warnings.append(f"Twitter: {warning}")
+            # Downgrade to summary card if image too small for large image
+            if card_type == "summary_large_image":
+                tags["twitter:card"] = "summary"
+        else:
+            tags["twitter:image"] = image_url
+            if image_alt:
+                tags["twitter:image:alt"] = image_alt
+
+    return tags, warnings
+
+
+def generate_opengraph_meta(
+    title: str,
+    description: str,
+    url: str,
+    site_name: str,
+    og_type: str = "article",
+    image_url: str | None = None,
+    image_alt: str | None = None,
+    image_width: int | None = None,
+    image_height: int | None = None,
+    min_image_width: int = 200,
+    min_image_height: int = 200,
+) -> tuple[dict[str, str], list[str]]:
+    """
+    Generate OpenGraph meta tags (TA-0073).
+
+    Args:
+        title: Content title
+        description: Content description
+        url: Canonical URL
+        site_name: Site name
+        og_type: OG type (article, website)
+        image_url: Optional image URL
+        image_alt: Optional image alt text
+        image_width: Optional image width for validation
+        image_height: Optional image height for validation
+        min_image_width: Minimum image width (default 200)
+        min_image_height: Minimum image height (default 200)
+
+    Returns:
+        Tuple of (meta_tags_dict, warnings_list)
+    """
+    warnings: list[str] = []
+    tags: dict[str, str] = {
+        "og:type": og_type,
+        "og:title": title,
+        "og:description": description,
+        "og:url": url,
+        "og:site_name": site_name,
+    }
+
+    if image_url:
+        # Validate dimensions if provided
+        is_valid, warning = validate_image_dimensions(
+            image_width, image_height, min_image_width, min_image_height
+        )
+        if not is_valid and warning:
+            warnings.append(f"OpenGraph: {warning}")
+        else:
+            tags["og:image"] = image_url
+            if image_alt:
+                tags["og:image:alt"] = image_alt
+            # Include dimensions if known (helps social platforms)
+            if image_width:
+                tags["og:image:width"] = str(image_width)
+            if image_height:
+                tags["og:image:height"] = str(image_height)
+
+    return tags, warnings
+
+
+def generate_social_meta_tags(
+    title: str,
+    description: str,
+    canonical_url: str,
+    site_name: str,
+    content_type: str = "article",
+    image_url: str | None = None,
+    image_alt: str | None = None,
+    image_width: int | None = None,
+    image_height: int | None = None,
+    twitter_card_type: str = "summary_large_image",
+    og_type: str | None = None,
+    min_twitter_width: int = 280,
+    min_twitter_height: int = 150,
+    min_og_width: int = 200,
+    min_og_height: int = 200,
+) -> tuple[dict[str, str], list[str]]:
+    """
+    Generate combined social meta tags for Twitter and OpenGraph (TA-0072, TA-0073).
+
+    This is the main entry point for social meta tag generation.
+
+    Args:
+        title: Content title
+        description: Content description
+        canonical_url: Canonical URL
+        site_name: Site name
+        content_type: Content type (article, website)
+        image_url: Optional image URL
+        image_alt: Optional image alt text
+        image_width: Optional image width for validation
+        image_height: Optional image height for validation
+        twitter_card_type: Twitter card type
+        og_type: OG type (defaults to content_type)
+        min_twitter_width: Min Twitter image width
+        min_twitter_height: Min Twitter image height
+        min_og_width: Min OG image width
+        min_og_height: Min OG image height
+
+    Returns:
+        Tuple of (combined_meta_tags_dict, warnings_list)
+    """
+    all_tags: dict[str, str] = {}
+    all_warnings: list[str] = []
+
+    # Generate Twitter Card tags
+    twitter_tags, twitter_warnings = generate_twitter_card_meta(
+        title=title,
+        description=description,
+        image_url=image_url,
+        image_alt=image_alt,
+        image_width=image_width,
+        image_height=image_height,
+        card_type=twitter_card_type,
+        min_image_width=min_twitter_width,
+        min_image_height=min_twitter_height,
+    )
+    all_tags.update(twitter_tags)
+    all_warnings.extend(twitter_warnings)
+
+    # Generate OpenGraph tags
+    og_tags, og_warnings = generate_opengraph_meta(
+        title=title,
+        description=description,
+        url=canonical_url,
+        site_name=site_name,
+        og_type=og_type or content_type,
+        image_url=image_url,
+        image_alt=image_alt,
+        image_width=image_width,
+        image_height=image_height,
+        min_image_width=min_og_width,
+        min_image_height=min_og_height,
+    )
+    all_tags.update(og_tags)
+    all_warnings.extend(og_warnings)
+
+    return all_tags, all_warnings

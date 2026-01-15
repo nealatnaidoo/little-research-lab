@@ -9,6 +9,7 @@ RoleType = Literal["owner", "admin", "publisher", "editor", "viewer"]
 ContentType = Literal["post", "page", "resource_pdf"]
 ContentStatus = Literal["draft", "scheduled", "published", "archived"]
 ContentVisibility = Literal["public", "unlisted", "private"]
+ContentTier = Literal["free", "premium", "subscriber_only"]
 BlockType = Literal["markdown", "image", "chart", "embed", "divider"]
 LinkStatus = Literal["active", "disabled"]
 CollabScope = Literal["view", "edit"]
@@ -83,6 +84,7 @@ class ContentItem(BaseModel):
     title: str
     summary: str = ""
     status: ContentStatus = "draft"
+    tier: ContentTier = "free"  # E17.1: Content tier for monetization
 
     publish_at: datetime | None = None
     published_at: datetime | None = None

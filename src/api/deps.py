@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 from src.adapters.auth.crypto import JWTAuthAdapter
 from src.adapters.auth.session_store import InMemorySessionStore
 from src.adapters.clock import SystemClock
+from src.adapters.dev_email import DevEmailAdapter
 from src.adapters.fs.filestore import FileSystemStore
 from src.adapters.sqlite.repos import (
     SQLiteAssetRepo,
@@ -21,6 +22,7 @@ from src.adapters.sqlite.repos import (
     SQLiteSiteSettingsRepo,
     SQLiteUserRepo,
 )
+from src.adapters.sqlite_db import SQLiteNewsletterSubscriberRepo
 from src.api.auth_utils import decode_access_token
 
 # Atomic components are stateless, so we import them here for dependency injection.
@@ -352,3 +354,166 @@ def get_published_content_or_404(
         raise HTTPException(status_code=404, detail=detail)
 
     return content
+
+
+# --- Newsletter Dependencies (T-0075) ---
+
+
+def get_newsletter_repo(
+    settings: Settings = Depends(get_settings),
+) -> SQLiteNewsletterSubscriberRepo:
+    """Get newsletter subscriber repository."""
+    return SQLiteNewsletterSubscriberRepo(settings.db_path)
+
+
+class NewsletterEmailSender:
+    """
+    Newsletter email sender adapter.
+
+    Adapts DevEmailAdapter to NewsletterEmailSenderPort interface.
+    """
+
+    def __init__(self, email_adapter: DevEmailAdapter) -> None:
+        self._adapter = email_adapter
+
+    def send_confirmation_email(
+        self,
+        recipient_email: str,
+        confirmation_url: str,
+        site_name: str,
+    ) -> bool:
+        """Send confirmation email."""
+        subject = f"Confirm your subscription to {site_name}"
+        body_html = f"""
+        <html>
+        <body>
+            <h1>Confirm your subscription</h1>
+            <p>Thanks for subscribing to {site_name}!</p>
+            <p>Please click the link below to confirm your subscription:</p>
+            <p><a href="{confirmation_url}">{confirmation_url}</a></p>
+            <p>If you didn't subscribe, you can safely ignore this email.</p>
+        </body>
+        </html>
+        """
+        body_text = f"""
+Confirm your subscription to {site_name}
+
+Thanks for subscribing! Please visit this link to confirm:
+{confirmation_url}
+
+If you didn't subscribe, you can safely ignore this email.
+        """
+        result = self._adapter.send_email(
+            recipient=recipient_email,
+            subject=subject,
+            body_html=body_html,
+            body_text=body_text,
+        )
+        return result.error is None or "dev mode" in result.error.lower()
+
+    def send_welcome_email(
+        self,
+        recipient_email: str,
+        unsubscribe_url: str,
+        site_name: str,
+    ) -> bool:
+        """Send welcome email after confirmation."""
+        subject = f"Welcome to {site_name}!"
+        body_html = f"""
+        <html>
+        <body>
+            <h1>Welcome!</h1>
+            <p>Your subscription to {site_name} is confirmed.</p>
+            <p>You'll now receive our newsletter updates.</p>
+            <p>If you ever want to unsubscribe, click here:
+            <a href="{unsubscribe_url}">Unsubscribe</a></p>
+        </body>
+        </html>
+        """
+        body_text = f"""
+Welcome to {site_name}!
+
+Your subscription is confirmed. You'll now receive our newsletter updates.
+
+To unsubscribe, visit: {unsubscribe_url}
+        """
+        result = self._adapter.send_email(
+            recipient=recipient_email,
+            subject=subject,
+            body_html=body_html,
+            body_text=body_text,
+        )
+        return result.error is None or "dev mode" in result.error.lower()
+
+
+# Email adapter singleton
+_email_adapter_instance: DevEmailAdapter | None = None
+
+
+def get_email_adapter() -> DevEmailAdapter:
+    """Get email adapter singleton."""
+    global _email_adapter_instance
+    if _email_adapter_instance is None:
+        _email_adapter_instance = DevEmailAdapter()
+    return _email_adapter_instance
+
+
+def get_newsletter_email_sender(
+    email_adapter: DevEmailAdapter = Depends(get_email_adapter),
+) -> NewsletterEmailSender:
+    """Get newsletter email sender."""
+    return NewsletterEmailSender(email_adapter)
+
+
+class InMemoryRateLimiter:
+    """
+    Simple in-memory rate limiter.
+
+    For production, use Redis or similar distributed cache.
+    """
+
+    def __init__(self) -> None:
+        self._attempts: dict[str, list[float]] = {}
+
+    def check_rate_limit(
+        self,
+        key: str,
+        limit: int,
+        window_seconds: int,
+    ) -> tuple[bool, int]:
+        """Check if rate limit is exceeded."""
+        import time
+
+        now = time.time()
+        window_start = now - window_seconds
+
+        # Clean old attempts
+        if key in self._attempts:
+            self._attempts[key] = [t for t in self._attempts[key] if t > window_start]
+        else:
+            self._attempts[key] = []
+
+        current_count = len(self._attempts[key])
+        remaining = max(0, limit - current_count)
+
+        return current_count < limit, remaining
+
+    def record_attempt(self, key: str) -> None:
+        """Record an attempt."""
+        import time
+
+        if key not in self._attempts:
+            self._attempts[key] = []
+        self._attempts[key].append(time.time())
+
+
+# Rate limiter singleton
+_rate_limiter_instance: InMemoryRateLimiter | None = None
+
+
+def get_rate_limiter() -> InMemoryRateLimiter:
+    """Get rate limiter singleton."""
+    global _rate_limiter_instance
+    if _rate_limiter_instance is None:
+        _rate_limiter_instance = InMemoryRateLimiter()
+    return _rate_limiter_instance

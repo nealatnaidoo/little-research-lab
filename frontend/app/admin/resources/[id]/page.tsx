@@ -73,7 +73,7 @@ export default function EditResourcePage({ params }: PageProps) {
 
     const fetchResource = async () => {
         try {
-            const data = await AdminResourcesService.getResource(id)
+            const data = await AdminResourcesService.getResourceApiAdminResourcesResourceIdGet(id)
             setResource(data)
             // Populate form
             setTitle(data.title)
@@ -114,7 +114,7 @@ export default function EditResourcePage({ params }: PageProps) {
 
         setSaving(true)
         try {
-            const updated = await AdminResourcesService.updateResource(id, {
+            const updated = await AdminResourcesService.updateResourceApiAdminResourcesResourceIdPut(id, {
                 title: title.trim(),
                 slug: slug.trim(),
                 summary: summary.trim() || undefined,
@@ -158,7 +158,7 @@ export default function EditResourcePage({ params }: PageProps) {
 
     const handleDelete = async () => {
         try {
-            await AdminResourcesService.deleteResource(id)
+            await AdminResourcesService.deleteResourceApiAdminResourcesResourceIdDelete(id)
             toast.success("Resource deleted")
             router.push("/admin/resources")
         } catch (error) {

@@ -54,7 +54,7 @@ export default function ResourcesListPage() {
 
     const fetchResources = async () => {
         try {
-            const data = await AdminResourcesService.listResources()
+            const data = await AdminResourcesService.listResourcesApiAdminResourcesGet()
             setItems(data)
         } catch (error) {
             console.error(error)
@@ -67,7 +67,7 @@ export default function ResourcesListPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this resource?")) return
         try {
-            await AdminResourcesService.deleteResource(id)
+            await AdminResourcesService.deleteResourceApiAdminResourcesResourceIdDelete(id)
             toast.success("Resource deleted")
             fetchResources()
         } catch (e) {

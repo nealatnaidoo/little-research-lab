@@ -19,8 +19,19 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { RichTextEditor } from "@/components/editor/RichTextEditor"
-import { ContentService, ContentBlockModel, ContentTransitionRequest } from "@/lib/api"
+import {
+    ContentService,
+    ContentBlockModel,
+    ContentTransitionRequest,
+} from "@/lib/api"
 import { AdminScheduleService } from "@/lib/api"
 import { PublishingControls } from "@/components/content/publishing-controls"
 import {
@@ -39,8 +50,17 @@ const formSchema = z.object({
     title: z.string().min(2, "Title must be at least 2 characters."),
     slug: z.string().min(2, "Slug must be at least 2 characters."),
     summary: z.string().optional(),
+    tier: z.enum(["free", "premium", "subscriber_only"]),
     body: z.any().optional(),
 })
+
+type ContentTier = "free" | "premium" | "subscriber_only"
+
+const TIER_LABELS: Record<ContentTier, string> = {
+    free: "Free",
+    premium: "Premium",
+    subscriber_only: "Subscriber Only",
+}
 
 export default function EditContentPage() {
     const router = useRouter()
@@ -59,6 +79,7 @@ export default function EditContentPage() {
             title: "",
             slug: "",
             summary: "",
+            tier: "free",
             body: {},
         },
     })
@@ -68,10 +89,13 @@ export default function EditContentPage() {
             const item = await ContentService.getContentApiContentItemIdGet(id)
             // Extract TipTap JSON from blocks array
             const bodyData = item.blocks?.[0]?.data_json?.tiptap || {}
+            // Map API tier enum to form value
+            const tierValue = (item.tier as ContentTier) || "free"
             form.reset({
                 title: item.title,
                 slug: item.slug,
                 summary: item.summary || "",
+                tier: tierValue,
                 body: bodyData,
             })
             setCurrentStatus(item.status || "draft")
@@ -103,6 +127,7 @@ export default function EditContentPage() {
                 title: values.title,
                 slug: values.slug,
                 summary: values.summary,
+                tier: values.tier,
                 blocks: blocks,
             })
             if (showToast) {
@@ -324,6 +349,44 @@ export default function EditContentPage() {
                         onSaveDraft={handleSaveDraft}
                         isSaving={saving}
                     />
+
+                    {/* Content Tier Selector */}
+                    <div className="rounded-lg border bg-card p-4">
+                        <h3 className="text-sm font-medium mb-3">Access Tier</h3>
+                        <Form {...form}>
+                            <FormField
+                                control={form.control}
+                                name="tier"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select tier" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {(Object.keys(TIER_LABELS) as ContentTier[]).map(
+                                                    (tier) => (
+                                                        <SelectItem key={tier} value={tier}>
+                                                            {TIER_LABELS[tier]}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Controls who can view this content
+                                        </p>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </Form>
+                    </div>
 
                     <div className="flex gap-2">
                         <Button

@@ -102,4 +102,16 @@ export class SsrService {
             },
         });
     }
+    /**
+     * XML Sitemap
+     * Sitemap for search engines (R2, T-0046). Only published content included.
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    public static sitemapXmlSitemapXmlGet(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/sitemap.xml',
+        });
+    }
 }

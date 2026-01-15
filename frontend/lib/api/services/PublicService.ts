@@ -42,6 +42,34 @@ export class PublicService {
         });
     }
     /**
+     * Get Related Articles
+     * Get related articles for a content item (TA-0097-0099).
+     *
+     * Returns recent published articles, excluding the current content.
+     * @param contentId
+     * @param limit
+     * @returns ContentItemResponse Successful Response
+     * @throws ApiError
+     */
+    public static getRelatedArticlesApiPublicContentContentIdRelatedGet(
+        contentId: string,
+        limit: number = 3,
+    ): CancelablePromise<Array<ContentItemResponse>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/public/content/{content_id}/related',
+            path: {
+                'content_id': contentId,
+            },
+            query: {
+                'limit': limit,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
      * Get Public Settings
      * Get public site settings.
      *

@@ -6,8 +6,6 @@
  * Validation error response.
  */
 export type ValidationErrorResponse = {
-    field: string;
-    code: string;
-    message: string;
+    errors: Array<Record<string, any>>;
 };
 

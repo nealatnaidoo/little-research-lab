@@ -10,3 +10,4 @@ export type EngagementTotalsResponse = {
     engaged_sessions: number;
     engagement_rate: number;
 };
+

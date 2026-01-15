@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-
 # --- Bucket Types ---
 
 TimeBucket = Literal["0-10s", "10-30s", "30-60s", "60-120s", "120-300s", "300+s"]

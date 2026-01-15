@@ -7,6 +7,7 @@ from pydantic import BaseModel
 # --- Shared Enums/Types ---
 BlockType = Literal["markdown", "image", "chart", "embed", "divider"]
 ContentStatus = Literal["draft", "scheduled", "published", "archived"]
+ContentTier = Literal["free", "premium", "subscriber_only"]
 Visibility = Literal["public", "unlisted", "private"]
 ContentType = Literal["post", "page", "resource_pdf"]
 PinnedPolicy = Literal["pinned", "latest"]
@@ -26,6 +27,7 @@ class ContentItemBase(BaseModel):
     slug: str
     summary: str | None = None
     status: ContentStatus = "draft"
+    tier: ContentTier = "free"
     visibility: Visibility = "public"
     publish_at: datetime | None = None
 
@@ -40,6 +42,7 @@ class ContentUpdateRequest(BaseModel):
     slug: str | None = None
     summary: str | None = None
     status: ContentStatus | None = None
+    tier: ContentTier | None = None
     visibility: Visibility | None = None
     publish_at: datetime | None = None
     blocks: list[ContentBlockModel] | None = None

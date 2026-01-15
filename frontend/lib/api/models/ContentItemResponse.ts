@@ -8,6 +8,7 @@ export type ContentItemResponse = {
     slug: string;
     summary?: (string | null);
     status?: ContentItemResponse.status;
+    tier?: ContentItemResponse.tier;
     visibility?: ContentItemResponse.visibility;
     publish_at?: (string | null);
     id: string;
@@ -25,6 +26,11 @@ export namespace ContentItemResponse {
         PUBLISHED = 'published',
         ARCHIVED = 'archived',
     }
+    export enum tier {
+        FREE = 'free',
+        PREMIUM = 'premium',
+        SUBSCRIBER_ONLY = 'subscriber_only',
+    }
     export enum visibility {
         PUBLIC = 'public',
         UNLISTED = 'unlisted',
@@ -33,6 +39,7 @@ export namespace ContentItemResponse {
     export enum type {
         POST = 'post',
         PAGE = 'page',
+        RESOURCE_PDF = 'resource_pdf',
     }
 }
 

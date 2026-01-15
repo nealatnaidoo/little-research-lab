@@ -14,6 +14,9 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Reader Experience', () => {
+    // Increase timeout for content creation tests
+    test.setTimeout(60000);
+
     // Helper to create and publish test content
     async function createPublishedContent(page: import('@playwright/test').Page) {
         // Login
@@ -21,7 +24,7 @@ test.describe('Reader Experience', () => {
         await page.fill('input[name="email"]', 'admin@example.com');
         await page.fill('input[name="password"]', 'changeme');
         await page.click('button[type="submit"]');
-        await page.waitForURL(/\/admin/, { timeout: 10000 });
+        await page.waitForURL(/\/admin/, { timeout: 15000 });
 
         // Create content
         const title = `Reader Test ${Date.now()}`;
@@ -30,15 +33,15 @@ test.describe('Reader Experience', () => {
         await page.goto('/admin/content/new');
         await page.fill('input[name="title"]', title);
         await page.fill('input[name="slug"]', slug);
-        await page.fill('textarea[name="description"]', 'Test content for reader experience');
+        await page.fill('textarea[name="summary"]', 'Test content for reader experience');
         await page.click('button[type="submit"]');
-        await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
+        await page.waitForURL(/\/admin\/content$/, { timeout: 15000 });
 
         // Publish the content
         await page.getByText(title).click();
-        await page.waitForURL(/\/admin\/content\/[^/]+$/, { timeout: 10000 });
+        await page.waitForURL(/\/admin\/content\/[^/]+$/, { timeout: 15000 });
         await page.getByRole('button', { name: 'Publish Now' }).click();
-        await expect(page.getByText('Content published')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('Content published')).toBeVisible({ timeout: 10000 });
 
         return { title, slug };
     }

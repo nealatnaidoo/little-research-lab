@@ -161,7 +161,7 @@ class TestPrivacyReport:
         report = run_privacy_checks()
         assert isinstance(report, PrivacyReport)
         assert report.timestamp is not None
-        assert len(report.checks) == 5
+        assert len(report.checks) == 9  # Analytics(5) + Engagement(3) + Newsletter(1)
 
     def test_report_to_dict_serializes_correctly(self) -> None:
         """Report can be serialized to dict for JSON output."""
@@ -174,7 +174,7 @@ class TestPrivacyReport:
         assert "passed" in report_dict
         assert "summary" in report_dict
         assert "checks" in report_dict
-        assert len(report_dict["checks"]) == 5
+        assert len(report_dict["checks"]) == 9  # Analytics(5) + Engagement(3) + Newsletter(1)
 
     def test_all_checks_have_required_fields(self) -> None:
         """Each check result has name, passed, message fields."""
@@ -235,3 +235,34 @@ class TestCurrentCodebaseCompliance:
         assert report.passed is True, f"Privacy check failed: {report.summary}"
         for check in report.checks:
             assert check.passed is True, f"Check '{check.name}' failed: {check.message}"
+
+
+# --- Test Newsletter Privacy Check (T-0084) ---
+
+
+class TestNewsletterPrivacyCompliance:
+    """Tests for newsletter privacy compliance check."""
+
+    def test_newsletter_check_exists(self) -> None:
+        """Newsletter privacy check function should exist."""
+        from scripts.privacy_schema_check import check_newsletter_privacy_compliance
+
+        result = check_newsletter_privacy_compliance()
+        assert result.name == "newsletter_privacy_compliance"
+
+    def test_newsletter_check_validates_email_is_allowed(self) -> None:
+        """Newsletter can legitimately store email (consent-based)."""
+        from scripts.privacy_schema_check import check_newsletter_privacy_compliance
+
+        result = check_newsletter_privacy_compliance()
+        # Check should pass even though email is stored
+        assert result.passed is True
+
+    def test_newsletter_check_included_in_report(self) -> None:
+        """Newsletter check should be part of full privacy report."""
+        from scripts.privacy_schema_check import run_privacy_checks
+
+        report = run_privacy_checks()
+        check_names = [c.name for c in report.checks]
+
+        assert "newsletter_privacy_compliance" in check_names

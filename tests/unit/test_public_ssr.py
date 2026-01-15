@@ -802,3 +802,330 @@ class TestSitemapXML:
         # & should be escaped to &amp;
         assert "&amp;" in xml
         assert "test&post" not in xml  # Raw & should not appear
+
+
+# --- Social Meta Tags Tests (TA-0072, TA-0073) ---
+
+
+class TestTwitterCardMetaTags:
+    """Test TA-0072: Twitter Card meta tags in SSR output."""
+
+    def test_twitter_card_type_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Twitter card type is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'name="twitter:card"' in html
+        assert "summary_large_image" in html or "summary" in html
+
+    def test_twitter_title_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Twitter title is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'name="twitter:title"' in html
+        assert settings.site_title in html
+
+    def test_twitter_description_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Twitter description is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'name="twitter:description"' in html
+
+    def test_twitter_image_present_when_available(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Twitter image is present when OG image available."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        # Settings fixture has og_image
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'name="twitter:image"' in html
+        assert "og-image.png" in html
+
+    def test_twitter_card_content_page(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        mock_content_repo: MockContentRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Content page has proper Twitter card tags."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+        content = mock_content_repo.get_by_slug("test-post", "post")
+
+        assert content is not None
+        metadata = render_service.build_content_metadata(settings, content)
+        html = render_meta_tags_html(metadata)
+
+        # Twitter card should use content title
+        assert 'name="twitter:title"' in html
+        assert content.title in html
+
+    def test_twitter_card_summary_large_image_with_image(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Twitter card is summary_large_image when image available."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+
+        # Settings has og_image, so should be summary_large_image
+        assert metadata.twitter_card == "summary_large_image"
+
+
+class TestOpenGraphMetaTags:
+    """Test TA-0073: OpenGraph meta tags in SSR output."""
+
+    def test_og_type_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:type is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:type"' in html
+        assert "website" in html
+
+    def test_og_type_article_for_content(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        mock_content_repo: MockContentRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:type is 'article' for content pages."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+        content = mock_content_repo.get_by_slug("test-post", "post")
+
+        assert content is not None
+        metadata = render_service.build_content_metadata(settings, content)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:type"' in html
+        # Content page should be article
+        assert 'content="article"' in html
+
+    def test_og_title_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:title is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:title"' in html
+        assert settings.site_title in html
+
+    def test_og_description_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:description is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:description"' in html
+
+    def test_og_url_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:url is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:url"' in html
+        assert "https://example.com" in html
+
+    def test_og_image_present_when_available(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:image is present when image available."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:image"' in html
+        assert "og-image.png" in html
+
+    def test_og_site_name_present(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """og:site_name is present in rendered HTML."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        assert 'property="og:site_name"' in html
+        assert settings.site_title in html
+
+    def test_og_content_page_uses_content_title(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        mock_content_repo: MockContentRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Content page OG title uses content title."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+        content = mock_content_repo.get_by_slug("test-post", "post")
+
+        assert content is not None
+        metadata = render_service.build_content_metadata(settings, content)
+
+        assert metadata.og_title == content.title
+
+
+class TestSocialMetaTagsIntegration:
+    """Integration tests for social meta tags in SSR pages."""
+
+    def test_full_ssr_page_has_all_social_tags(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        mock_content_repo: MockContentRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Full SSR page contains all required social meta tags."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+        content = mock_content_repo.get_by_slug("test-post", "post")
+
+        assert content is not None
+        metadata = render_service.build_content_metadata(settings, content)
+        html = render_ssr_page(metadata, f"<h1>{content.title}</h1>")
+
+        # All Twitter Card tags
+        assert 'name="twitter:card"' in html
+        assert 'name="twitter:title"' in html
+        assert 'name="twitter:description"' in html
+        assert 'name="twitter:image"' in html
+
+        # All OpenGraph tags
+        assert 'property="og:type"' in html
+        assert 'property="og:title"' in html
+        assert 'property="og:description"' in html
+        assert 'property="og:url"' in html
+        assert 'property="og:image"' in html
+        assert 'property="og:site_name"' in html
+
+    def test_resource_pdf_has_social_tags(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Resource PDF page has proper social meta tags."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        resource_content = ContentItem(
+            id=uuid4(),
+            type="resource_pdf",
+            slug="report-2024",
+            title="Annual Report 2024",
+            summary="Company financial report",
+            status="published",
+            owner_user_id=uuid4(),
+            published_at=datetime.now(UTC),
+        )
+
+        metadata = render_service.build_content_metadata(settings, resource_content)
+        html = render_ssr_page(metadata, "<article>PDF content</article>")
+
+        # Resource PDF should have article type
+        assert 'property="og:type"' in html
+        assert 'content="article"' in html
+
+        # Twitter and OG tags should contain resource title
+        assert "Annual Report 2024" in html
+
+    def test_homepage_og_type_is_website(
+        self,
+        mock_settings_with_data: MockSettingsRepo,
+        render_service: RenderService,
+    ) -> None:
+        """Homepage og:type is 'website' not 'article'."""
+        service = SettingsService(repo=mock_settings_with_data)
+        settings = service.get()
+
+        metadata = render_service.build_homepage_metadata(settings)
+
+        assert metadata.og_type == "website"
+
+    def test_social_tags_escaped_properly(
+        self,
+        render_service: RenderService,
+    ) -> None:
+        """Social meta tags escape special characters properly."""
+        # Create settings with special characters
+        settings = SiteSettings(
+            site_title="Test & Site <Title>",
+            site_subtitle='Description with "quotes" & ampersands',
+            avatar_asset_id=None,
+            theme="dark",
+            social_links_json={},
+            updated_at=datetime.now(UTC),
+        )
+
+        metadata = render_service.build_homepage_metadata(settings)
+        html = render_meta_tags_html(metadata)
+
+        # Should not have unescaped special chars
+        assert "<Title>" not in html  # Should be &lt;Title&gt;
+        assert "&lt;" in html or "Test &amp; Site" in html
+        assert '"quotes"' not in html or "&quot;" in html

@@ -42,6 +42,7 @@ from src.api.routes import (  # noqa: E402
     admin_analytics,
     admin_audit,
     admin_links,
+    admin_newsletter,
     admin_redirects,
     admin_resources,
     admin_schedule,
@@ -52,8 +53,10 @@ from src.api.routes import (  # noqa: E402
     content,
     public,
     public_assets,
+    public_newsletter,
     public_redirects,
     public_settings,
+    public_sharing,
     public_ssr,
     users,
 )
@@ -65,6 +68,9 @@ app.include_router(admin_analytics.router, prefix="/api/admin/analytics", tags=[
 app.include_router(admin_audit.router, prefix="/api/admin/audit", tags=["Admin Audit"])
 app.include_router(admin_links.router, prefix="/api/admin", tags=["Admin Links"])
 app.include_router(admin_redirects.router, prefix="/api/admin/redirects", tags=["Admin Redirects"])
+app.include_router(
+    admin_newsletter.router, prefix="/api/admin/newsletter", tags=["Admin Newsletter"]
+)
 app.include_router(admin_resources.router, prefix="/api/admin/resources", tags=["Admin Resources"])
 # admin_assets router removed
 app.include_router(content.router, prefix="/api/content", tags=["Content"])
@@ -72,6 +78,8 @@ app.include_router(assets.router, prefix="/api/assets", tags=["Assets"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(public.router, prefix="/api/public", tags=["Public"])
 app.include_router(public_settings.router, prefix="/api/public", tags=["Public"])
+app.include_router(public_sharing.router, prefix="/api/public", tags=["Public Sharing"])
+app.include_router(public_newsletter.router, prefix="/api/public", tags=["Public Newsletter"])
 app.include_router(
     public_redirects.router, prefix="/api/public/redirects", tags=["Public Redirects"]
 )

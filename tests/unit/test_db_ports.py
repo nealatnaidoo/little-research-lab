@@ -18,10 +18,12 @@ from src.adapters.sqlite_db import (
     SQLiteAnalyticsAggregateRepo,
     SQLiteAssetVersionRepo,
     SQLiteAuditLogRepo,
+    SQLiteNewsletterSubscriberRepo,
     SQLitePublishJobRepo,
     SQLiteRedirectRepo,
     SQLiteUnitOfWork,
 )
+from src.components.newsletter.models import NewsletterSubscriber, SubscriberStatus
 from src.core.entities import (
     AssetVersion,
     AuditEvent,
@@ -116,6 +118,18 @@ def db_path(tmp_path: Path) -> str:
             target_id TEXT NOT NULL,
             meta_json TEXT NOT NULL,
             created_at TEXT NOT NULL
+        );
+
+        -- Newsletter subscribers (E16)
+        CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL CHECK(status IN ('pending', 'confirmed', 'unsubscribed')),
+            confirmation_token TEXT,
+            unsubscribe_token TEXT,
+            created_at TEXT NOT NULL,
+            confirmed_at TEXT,
+            unsubscribed_at TEXT
         );
         """
     )
@@ -548,3 +562,238 @@ class TestUnitOfWorkContract:
         repo = SQLiteRedirectRepo(db_path)
         result = repo.get_by_source_path("/test-rollback")
         assert result is None
+
+
+class TestNewsletterSubscriberRepoContract:
+    """TA-0103: NewsletterSubscriber repository contract tests."""
+
+    def test_save_and_get_by_id(self, db_path: str) -> None:
+        """Subscribers can be saved and retrieved by ID."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="user@example.com",
+            status=SubscriberStatus.PENDING,
+            confirmation_token="conf123",
+            unsubscribe_token="unsub123",
+            created_at=datetime.now(UTC),
+        )
+
+        repo.save(subscriber)
+        retrieved = repo.get_by_id(subscriber.id)
+
+        assert retrieved is not None
+        assert retrieved.id == subscriber.id
+        assert retrieved.email == subscriber.email
+        assert retrieved.status == SubscriberStatus.PENDING
+
+    def test_get_by_email(self, db_path: str) -> None:
+        """Subscribers can be retrieved by email."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="test@example.com",
+            status=SubscriberStatus.PENDING,
+        )
+        repo.save(subscriber)
+
+        # Should find by exact match
+        retrieved = repo.get_by_email("test@example.com")
+        assert retrieved is not None
+        assert retrieved.id == subscriber.id
+
+        # Should find by case-insensitive match
+        retrieved2 = repo.get_by_email("TEST@Example.COM")
+        assert retrieved2 is not None
+        assert retrieved2.id == subscriber.id
+
+    def test_get_by_confirmation_token(self, db_path: str) -> None:
+        """Subscribers can be retrieved by confirmation token."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="user@example.com",
+            status=SubscriberStatus.PENDING,
+            confirmation_token="unique_conf_token",
+        )
+        repo.save(subscriber)
+
+        retrieved = repo.get_by_confirmation_token("unique_conf_token")
+        assert retrieved is not None
+        assert retrieved.id == subscriber.id
+
+        # Non-existent token returns None
+        assert repo.get_by_confirmation_token("nonexistent") is None
+
+    def test_get_by_unsubscribe_token(self, db_path: str) -> None:
+        """Subscribers can be retrieved by unsubscribe token."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="user@example.com",
+            status=SubscriberStatus.CONFIRMED,
+            unsubscribe_token="unique_unsub_token",
+        )
+        repo.save(subscriber)
+
+        retrieved = repo.get_by_unsubscribe_token("unique_unsub_token")
+        assert retrieved is not None
+        assert retrieved.id == subscriber.id
+
+    def test_update_subscriber(self, db_path: str) -> None:
+        """Subscribers can be updated."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="user@example.com",
+            status=SubscriberStatus.PENDING,
+            confirmation_token="token",
+        )
+        repo.save(subscriber)
+
+        # Update to confirmed
+        confirmed = NewsletterSubscriber(
+            id=subscriber.id,
+            email=subscriber.email,
+            status=SubscriberStatus.CONFIRMED,
+            confirmation_token=None,  # Cleared
+            confirmed_at=datetime.now(UTC),
+        )
+        repo.save(confirmed)
+
+        retrieved = repo.get_by_id(subscriber.id)
+        assert retrieved is not None
+        assert retrieved.status == SubscriberStatus.CONFIRMED
+        assert retrieved.confirmation_token is None
+        assert retrieved.confirmed_at is not None
+
+    def test_delete_subscriber(self, db_path: str) -> None:
+        """Subscribers can be deleted (GDPR)."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        subscriber = NewsletterSubscriber(
+            id=uuid4(),
+            email="delete@example.com",
+            status=SubscriberStatus.CONFIRMED,
+        )
+        repo.save(subscriber)
+
+        result = repo.delete(subscriber.id)
+        assert result is True
+
+        # Verify deleted
+        assert repo.get_by_id(subscriber.id) is None
+        assert repo.get_by_email("delete@example.com") is None
+
+    def test_delete_nonexistent(self, db_path: str) -> None:
+        """Deleting non-existent subscriber returns False."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+        result = repo.delete(uuid4())
+        assert result is False
+
+    def test_list_by_status(self, db_path: str) -> None:
+        """Subscribers can be listed by status."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        # Create subscribers with different statuses
+        for i, status in enumerate([
+            SubscriberStatus.PENDING,
+            SubscriberStatus.CONFIRMED,
+            SubscriberStatus.CONFIRMED,
+            SubscriberStatus.UNSUBSCRIBED,
+        ]):
+            subscriber = NewsletterSubscriber(
+                id=uuid4(),
+                email=f"user{i}@example.com",
+                status=status,
+            )
+            repo.save(subscriber)
+
+        confirmed = repo.list_by_status(SubscriberStatus.CONFIRMED)
+        assert len(confirmed) == 2
+
+        pending = repo.list_by_status(SubscriberStatus.PENDING)
+        assert len(pending) == 1
+
+    def test_count_by_status(self, db_path: str) -> None:
+        """Subscribers can be counted by status."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        for i, status in enumerate([
+            SubscriberStatus.PENDING,
+            SubscriberStatus.CONFIRMED,
+            SubscriberStatus.CONFIRMED,
+        ]):
+            subscriber = NewsletterSubscriber(
+                id=uuid4(),
+                email=f"count{i}@example.com",
+                status=status,
+            )
+            repo.save(subscriber)
+
+        assert repo.count_by_status(SubscriberStatus.CONFIRMED) == 2
+        assert repo.count_by_status(SubscriberStatus.PENDING) == 1
+        assert repo.count_by_status(SubscriberStatus.UNSUBSCRIBED) == 0
+
+    def test_email_unique_constraint(self, db_path: str) -> None:
+        """Email addresses must be unique."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        sub1 = NewsletterSubscriber(
+            id=uuid4(),
+            email="unique@example.com",
+            status=SubscriberStatus.PENDING,
+        )
+        sub2 = NewsletterSubscriber(
+            id=uuid4(),
+            email="unique@example.com",  # Same email
+            status=SubscriberStatus.PENDING,
+        )
+
+        repo.save(sub1)
+
+        with pytest.raises(sqlite3.IntegrityError):
+            repo.save(sub2)
+
+    def test_list_all_with_pagination(self, db_path: str) -> None:
+        """list_all returns paginated results."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        for i in range(5):
+            subscriber = NewsletterSubscriber(
+                id=uuid4(),
+                email=f"page{i}@example.com",
+                status=SubscriberStatus.CONFIRMED,
+            )
+            repo.save(subscriber)
+
+        # First page
+        page1 = repo.list_all(limit=2, offset=0)
+        assert len(page1) == 2
+
+        # Second page
+        page2 = repo.list_all(limit=2, offset=2)
+        assert len(page2) == 2
+
+        # Third page (only 1 remaining)
+        page3 = repo.list_all(limit=2, offset=4)
+        assert len(page3) == 1
+
+    def test_count_all(self, db_path: str) -> None:
+        """count_all returns total subscriber count."""
+        repo = SQLiteNewsletterSubscriberRepo(db_path)
+
+        for i in range(3):
+            subscriber = NewsletterSubscriber(
+                id=uuid4(),
+                email=f"total{i}@example.com",
+                status=SubscriberStatus.CONFIRMED,
+            )
+            repo.save(subscriber)
+
+        assert repo.count_all() == 3

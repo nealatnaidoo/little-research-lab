@@ -114,3 +114,20 @@ class ContentOperationOutput:
     content: ContentItem | None = None
     errors: list[ContentValidationError] = field(default_factory=list)
     success: bool = True
+
+
+@dataclass(frozen=True)
+class GetRelatedInput:
+    """Input for getting related articles."""
+
+    content_id: UUID
+    limit: int = 3
+
+
+@dataclass(frozen=True)
+class RelatedArticlesOutput:
+    """Output containing related articles."""
+
+    articles: list[ContentItem] = field(default_factory=list)
+    errors: list[ContentValidationError] = field(default_factory=list)
+    success: bool = True

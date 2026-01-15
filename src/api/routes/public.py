@@ -1,12 +1,13 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.adapters.sqlite.repos import SQLiteLinkRepo
 from src.api.deps import get_content_repo, get_link_repo
 from src.api.schemas import ContentItemResponse
-from src.components.content.component import run_get, run_list
-from src.components.content.models import GetContentInput, ListContentInput
+from src.components.content.component import run_get, run_get_related, run_list
+from src.components.content.models import GetContentInput, GetRelatedInput, ListContentInput
 
 router = APIRouter()
 
@@ -54,3 +55,29 @@ def get_public_content(
         raise HTTPException(status_code=404, detail="Content not found")
 
     return item  # type: ignore[return-value]
+
+
+@router.get("/content/{content_id}/related", response_model=list[ContentItemResponse])
+def get_related_articles(
+    content_id: str,
+    limit: int = 3,
+    content_repo: Any = Depends(get_content_repo),
+) -> list[ContentItemResponse]:
+    """
+    Get related articles for a content item (TA-0097-0099).
+
+    Returns recent published articles, excluding the current content.
+    """
+    try:
+        uuid_id = UUID(content_id)
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail="Invalid content ID") from err
+
+    inp = GetRelatedInput(content_id=uuid_id, limit=limit)
+    result = run_get_related(inp, repo=content_repo)
+
+    if not result.success:
+        # Return empty list on error (graceful degradation)
+        return []
+
+    return result.articles  # type: ignore[return-value]

@@ -38,7 +38,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ContentService, type ContentItemResponse } from "@/lib/api"
+import { ContentService, ContentItemResponse } from "@/lib/api"
+
+type ContentTier = "free" | "premium" | "subscriber_only"
+
+const TIER_BADGES: Record<ContentTier, { label: string; className: string }> = {
+    free: {
+        label: "Free",
+        className: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300",
+    },
+    premium: {
+        label: "Premium",
+        className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400",
+    },
+    subscriber_only: {
+        label: "Subscriber",
+        className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/20 dark:text-purple-400",
+    },
+}
 import { AdminScheduleService } from "@/lib/api"
 import { toast } from "sonner"
 
@@ -117,6 +134,16 @@ export default function ContentListPage() {
         }
     }
 
+    const getTierBadge = (tier: string | undefined) => {
+        const tierKey = (tier || "free") as ContentTier
+        const config = TIER_BADGES[tierKey] || TIER_BADGES.free
+        return (
+            <Badge variant="outline" className={config.className}>
+                {config.label}
+            </Badge>
+        )
+    }
+
     const formatDate = (dateStr: string | null | undefined) => {
         if (!dateStr) return "-"
         const date = new Date(dateStr)
@@ -189,6 +216,7 @@ export default function ContentListPage() {
                                 <TableHead>Title</TableHead>
                                 <TableHead>Slug</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Tier</TableHead>
                                 <TableHead>Scheduled / Published</TableHead>
                                 <TableHead className="w-[70px]"></TableHead>
                             </TableRow>
@@ -197,7 +225,7 @@ export default function ContentListPage() {
                             {filteredItems.length === 0 ? (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={5}
+                                        colSpan={6}
                                         className="text-center text-muted-foreground h-24"
                                     >
                                         No content found.
@@ -218,6 +246,7 @@ export default function ContentListPage() {
                                             {item.slug}
                                         </TableCell>
                                         <TableCell>{getStatusBadge(item.status || "draft")}</TableCell>
+                                        <TableCell>{getTierBadge(item.tier)}</TableCell>
                                         <TableCell>
                                             {item.status === "scheduled" && item.publish_at ? (
                                                 <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">

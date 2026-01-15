@@ -14,7 +14,7 @@ Invariants:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from .models import (
     BucketCount,
@@ -37,7 +37,6 @@ from .ports import (
     EngagementRulesPort,
     TimePort,
 )
-
 
 # --- Default Configuration ---
 
@@ -278,7 +277,7 @@ def run_calculate(
         if time_port is not None:
             timestamp = time_port.now_utc()
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
     # Truncate to day for privacy
     if time_port is not None:

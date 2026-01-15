@@ -19,6 +19,6 @@ export type DashboardResponse = {
     top_content: TopContentResponse;
     top_sources: TopSourcesResponse;
     top_referrers: TopReferrersResponse;
-    engagement?: EngagementTotalsResponse | null;
+    engagement?: (EngagementTotalsResponse | null);
 };
 

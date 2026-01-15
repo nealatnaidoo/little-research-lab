@@ -3,9 +3,10 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Validation error response.
+ * Error response.
  */
-export type src__api__routes__admin_redirects__ValidationErrorResponse = {
-    errors: Array<Record<string, any>>;
+export type src__api__routes__public_newsletter__ErrorResponse = {
+    detail: string;
+    code: string;
 };
 

@@ -11,11 +11,14 @@ Test assertions:
 
 from __future__ import annotations
 
+import os
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.adapters.sqlite_db import SQLiteEngagementRepo
 from src.components.analytics import (
     AnalyticsIngestionService,
     IngestionConfig,
@@ -23,11 +26,10 @@ from src.components.analytics import (
 )
 from src.components.engagement import (
     CalculateEngagementInput,
+)
+from src.components.engagement import (
     run_calculate as calculate_engagement,
 )
-from src.adapters.sqlite_db import SQLiteEngagementRepo
-from uuid import UUID
-import os
 
 router = APIRouter()
 

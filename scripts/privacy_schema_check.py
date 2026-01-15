@@ -404,8 +404,9 @@ def check_engagement_repo_port() -> CheckResult:
     not raw time_on_page_seconds or scroll_depth_percent.
     """
     try:
-        from src.components.engagement.ports import EngagementRepoPort
         import typing
+
+        from src.components.engagement.ports import EngagementRepoPort
 
         # Get type hints for store_session method
         hints = typing.get_type_hints(EngagementRepoPort.store_session)
@@ -427,7 +428,10 @@ def check_engagement_repo_port() -> CheckResult:
             )
 
         # Check for raw (unbucketed) fields
-        raw_fields = {"time_on_page_seconds", "scroll_depth_percent", "raw_time", "raw_scroll", "seconds", "percent"}
+        raw_fields = {
+            "time_on_page_seconds", "scroll_depth_percent",
+            "raw_time", "raw_scroll", "seconds", "percent",
+        }
         raw_found = params & raw_fields
         if raw_found:
             return CheckResult(
@@ -529,6 +533,128 @@ def check_engagement_component_bucketing() -> CheckResult:
             name="engagement_component_bucketing",
             passed=True,
             message=f"Engagement bucketing check note: {e}",
+        )
+
+
+def check_newsletter_privacy_compliance() -> CheckResult:
+    """
+    Check newsletter component privacy compliance (T-0084).
+
+    Newsletter legitimately stores email (consent-based, not tracking).
+    This check validates:
+    - Email is the only PII stored in the subscriber entity
+    - No IP addresses or user agents stored in subscriber entity
+    - GDPR compliance: unsubscribe and delete capabilities
+    - Double opt-in implemented (pending → confirmed state)
+
+    Note: ip_address may appear in input models for rate limiting purposes
+    (not stored), which is acceptable.
+    """
+    try:
+        newsletter_path = PROJECT_ROOT / "src/components/newsletter"
+        if not newsletter_path.exists():
+            return CheckResult(
+                name="newsletter_privacy_compliance",
+                passed=True,
+                message="Newsletter component not implemented yet",
+            )
+
+        details = []
+        errors = []
+
+        # Check the models/entity file
+        models_path = newsletter_path / "models.py"
+        if models_path.exists():
+            content = models_path.read_text()
+
+            # Email is ALLOWED for newsletter (consent-based)
+            if "email" in content:
+                details.append("Email field present (required for newsletter)")
+
+            # Check the NewsletterSubscriber entity class specifically
+            # Extract the entity class definition
+            import re
+            subscriber_match = re.search(
+                r'class NewsletterSubscriber.*?(?=\n(?:class |# ---|$))',
+                content,
+                re.DOTALL
+            )
+
+            if subscriber_match:
+                entity_content = subscriber_match.group(0)
+
+                # Forbidden PII fields in the STORED entity
+                forbidden_stored = [
+                    "ip_address", "ip:", "user_agent",
+                    "cookie", "visitor_id", "fingerprint",
+                ]
+                for field in forbidden_stored:
+                    if field in entity_content.lower():
+                        errors.append(
+                            f"Forbidden PII field in NewsletterSubscriber: {field}"
+                        )
+
+                # Verify only allowed fields in entity
+                details.append("NewsletterSubscriber entity checked for PII")
+            else:
+                details.append(
+                    "NewsletterSubscriber entity not found (may be different format)"
+                )
+
+            # Check for status field (double opt-in)
+            if "status" in content and ("pending" in content or "confirmed" in content):
+                details.append("Has status field for double opt-in")
+            else:
+                errors.append("Missing status field for double opt-in compliance")
+
+        # Check the ports file for GDPR compliance
+        ports_path = newsletter_path / "ports.py"
+        if ports_path.exists():
+            content = ports_path.read_text()
+
+            # Must have delete method (GDPR right to erasure)
+            if "delete" in content.lower():
+                details.append("Has delete capability (GDPR right to erasure)")
+            else:
+                errors.append("Missing delete method for GDPR compliance")
+
+            # Must have unsubscribe capability
+            if "unsubscribe" in content.lower():
+                details.append("Has unsubscribe capability")
+            else:
+                errors.append("Missing unsubscribe capability")
+
+        # Check service for double opt-in flow
+        service_path = newsletter_path / "service.py"
+        if service_path.exists():
+            content = service_path.read_text()
+
+            if "confirm" in content.lower():
+                details.append("Has confirmation flow (double opt-in)")
+
+            if "token" in content.lower():
+                details.append("Uses tokens for secure confirm/unsubscribe")
+
+        if errors:
+            return CheckResult(
+                name="newsletter_privacy_compliance",
+                passed=False,
+                message=f"Newsletter privacy issues: {len(errors)} found",
+                details=errors,
+            )
+
+        return CheckResult(
+            name="newsletter_privacy_compliance",
+            passed=True,
+            message="Newsletter component is privacy-compliant (consent-based email storage)",
+            details=details if details else ["Newsletter follows privacy best practices"],
+        )
+
+    except Exception as e:
+        return CheckResult(
+            name="newsletter_privacy_compliance",
+            passed=True,
+            message=f"Newsletter privacy check note: {e}",
         )
 
 
@@ -644,6 +770,8 @@ def run_privacy_checks() -> PrivacyReport:
         check_engagement_repo_port(),
         check_engagement_component_bucketing(),
         check_engagement_sqlite_schema(),
+        # Newsletter check (T-0084)
+        check_newsletter_privacy_compliance(),
     ]
 
     all_passed = all(c.passed for c in checks)

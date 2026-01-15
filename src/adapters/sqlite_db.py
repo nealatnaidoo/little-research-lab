@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from src.components.newsletter.models import NewsletterSubscriber, SubscriberStatus
 from src.core.entities import (
     AnalyticsEventAggregate,
     Asset,
@@ -1000,16 +1001,17 @@ class SQLiteContentRepoAdapter(SQLiteRepoBase):
             conn.execute(
                 """
                 INSERT INTO content_items (
-                    id, type, slug, title, summary, status,
+                    id, type, slug, title, summary, status, tier,
                     publish_at, published_at, owner_user_id,
                     visibility, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     type=excluded.type,
                     slug=excluded.slug,
                     title=excluded.title,
                     summary=excluded.summary,
                     status=excluded.status,
+                    tier=excluded.tier,
                     publish_at=excluded.publish_at,
                     published_at=excluded.published_at,
                     owner_user_id=excluded.owner_user_id,
@@ -1023,6 +1025,7 @@ class SQLiteContentRepoAdapter(SQLiteRepoBase):
                     content.title,
                     content.summary,
                     content.status,
+                    content.tier,
                     content.publish_at.isoformat() if content.publish_at else None,
                     content.published_at.isoformat() if content.published_at else None,
                     str(content.owner_user_id),
@@ -1089,6 +1092,29 @@ class SQLiteContentRepoAdapter(SQLiteRepoBase):
     def list_published(self) -> list[ContentItem]:
         return self.list_items({"status": "published"})
 
+    def get_related_published(
+        self,
+        *,
+        exclude_id: UUID,
+        limit: int = 3,
+    ) -> list[ContentItem]:
+        """Get recent published content excluding the given ID."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """
+                SELECT * FROM content_items
+                WHERE status = 'published' AND id != ?
+                ORDER BY published_at DESC
+                LIMIT ?
+                """,
+                (str(exclude_id), limit),
+            ).fetchall()
+            return [self._map_row_with_blocks(conn, r) for r in rows]
+        finally:
+            if self._should_close():
+                conn.close()
+
     def list_scheduled_before(self, before_utc: datetime) -> list[ContentItem]:
         conn = self._get_conn()
         try:
@@ -1123,6 +1149,7 @@ class SQLiteContentRepoAdapter(SQLiteRepoBase):
             title=row["title"],
             summary=row["summary"],
             status=row["status"],
+            tier=row.get("tier", "free"),  # Default for backwards compatibility
             publish_at=parse_dt(row["publish_at"]),
             published_at=parse_dt(row["published_at"]),
             owner_user_id=UUID(row["owner_user_id"]),
@@ -1392,7 +1419,11 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
         """Get engagement totals."""
         conn = self._get_conn()
         try:
-            query = "SELECT SUM(session_count) as total, SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END) as engaged FROM engagement_sessions WHERE 1=1"
+            query = """
+                SELECT SUM(session_count) as total,
+                       SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END) as engaged
+                FROM engagement_sessions WHERE 1=1
+            """
             params: list[Any] = []
 
             if content_id:
@@ -1431,7 +1462,10 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
         conn = self._get_conn()
         try:
             bucket_col = "time_bucket" if distribution_type == "time" else "scroll_bucket"
-            query = f"SELECT {bucket_col} as bucket, SUM(session_count) as count FROM engagement_sessions WHERE 1=1"
+            query = f"""
+                SELECT {bucket_col} as bucket, SUM(session_count) as count
+                FROM engagement_sessions WHERE 1=1
+            """
             params: list[Any] = []
 
             if content_id:
@@ -1466,7 +1500,8 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
             query = """
                 SELECT content_id,
                        SUM(session_count) as total_sessions,
-                       SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END) as engaged_sessions
+                       SUM(CASE WHEN is_engaged = 1 THEN session_count ELSE 0 END)
+                           as engaged_sessions
                 FROM engagement_sessions
                 WHERE 1=1
             """
@@ -1495,3 +1530,188 @@ class SQLiteEngagementRepo(SQLiteRepoBase):
         finally:
             if self._should_close():
                 conn.close()
+
+
+# -----------------------------------------------------------------------------
+# E16: Newsletter Subscriber Repository
+# -----------------------------------------------------------------------------
+
+
+class SQLiteNewsletterSubscriberRepo(SQLiteRepoBase):
+    """SQLite implementation of NewsletterRepoPort."""
+
+    def get_by_id(self, subscriber_id: UUID) -> NewsletterSubscriber | None:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM newsletter_subscribers WHERE id = ?",
+                (str(subscriber_id),)
+            ).fetchone()
+            return self._map_row(row) if row else None
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_by_email(self, email: str) -> NewsletterSubscriber | None:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM newsletter_subscribers WHERE email = ?",
+                (email.lower(),)
+            ).fetchone()
+            return self._map_row(row) if row else None
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_by_confirmation_token(self, token: str) -> NewsletterSubscriber | None:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM newsletter_subscribers WHERE confirmation_token = ?",
+                (token,)
+            ).fetchone()
+            return self._map_row(row) if row else None
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def get_by_unsubscribe_token(self, token: str) -> NewsletterSubscriber | None:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?",
+                (token,)
+            ).fetchone()
+            return self._map_row(row) if row else None
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def save(self, subscriber: NewsletterSubscriber) -> NewsletterSubscriber:
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                """
+                INSERT INTO newsletter_subscribers (
+                    id, email, status, confirmation_token, unsubscribe_token,
+                    created_at, confirmed_at, unsubscribed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    email=excluded.email,
+                    status=excluded.status,
+                    confirmation_token=excluded.confirmation_token,
+                    unsubscribe_token=excluded.unsubscribe_token,
+                    confirmed_at=excluded.confirmed_at,
+                    unsubscribed_at=excluded.unsubscribed_at
+                """,
+                (
+                    str(subscriber.id),
+                    subscriber.email.lower(),
+                    subscriber.status.value,
+                    subscriber.confirmation_token,
+                    subscriber.unsubscribe_token,
+                    subscriber.created_at.isoformat(),
+                    subscriber.confirmed_at.isoformat() if subscriber.confirmed_at else None,
+                    subscriber.unsubscribed_at.isoformat() if subscriber.unsubscribed_at else None,
+                ),
+            )
+            if self._should_close():
+                conn.commit()
+            return subscriber
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def delete(self, subscriber_id: UUID) -> bool:
+        conn = self._get_conn()
+        try:
+            cursor = conn.execute(
+                "DELETE FROM newsletter_subscribers WHERE id = ?",
+                (str(subscriber_id),)
+            )
+            if self._should_close():
+                conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def list_by_status(
+        self,
+        status: SubscriberStatus,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[NewsletterSubscriber]:
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """
+                SELECT * FROM newsletter_subscribers
+                WHERE status = ?
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+                """,
+                (status.value, limit, offset),
+            ).fetchall()
+            return [self._map_row(r) for r in rows]
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def count_by_status(self, status: SubscriberStatus) -> int:
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) as count FROM newsletter_subscribers WHERE status = ?",
+                (status.value,),
+            ).fetchone()
+            return row["count"] if row else 0
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def list_all(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[NewsletterSubscriber]:
+        """List all subscribers with pagination."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """
+                SELECT * FROM newsletter_subscribers
+                ORDER BY created_at DESC
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset),
+            ).fetchall()
+            return [self._map_row(r) for r in rows]
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def count_all(self) -> int:
+        """Count all subscribers."""
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) as count FROM newsletter_subscribers"
+            ).fetchone()
+            return row["count"] if row else 0
+        finally:
+            if self._should_close():
+                conn.close()
+
+    def _map_row(self, row: dict[str, Any]) -> NewsletterSubscriber:
+        return NewsletterSubscriber(
+            id=UUID(row["id"]),
+            email=row["email"],
+            status=SubscriberStatus(row["status"]),
+            confirmation_token=row["confirmation_token"],
+            unsubscribe_token=row["unsubscribe_token"],
+            created_at=datetime.fromisoformat(row["created_at"]),
+            confirmed_at=parse_dt(row["confirmed_at"]),
+            unsubscribed_at=parse_dt(row["unsubscribed_at"]),
+        )

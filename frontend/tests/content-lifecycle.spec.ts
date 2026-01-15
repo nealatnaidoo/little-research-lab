@@ -36,7 +36,7 @@ test.describe('Content Lifecycle', () => {
         // Fill in content details
         await page.fill('input[name="title"]', testContent.title);
         await page.fill('input[name="slug"]', testContent.slug);
-        await page.fill('textarea[name="description"]', testContent.description);
+        await page.fill('textarea[name="summary"]', testContent.description);
 
         // Submit form
         await page.click('button[type="submit"]');
@@ -53,7 +53,7 @@ test.describe('Content Lifecycle', () => {
         await page.goto('/admin/content/new');
         await page.fill('input[name="title"]', testContent.title);
         await page.fill('input[name="slug"]', testContent.slug);
-        await page.fill('textarea[name="description"]', testContent.description);
+        await page.fill('textarea[name="summary"]', testContent.description);
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -80,7 +80,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', publishTitle);
         await page.fill('input[name="slug"]', publishSlug);
-        await page.fill('textarea[name="description"]', 'Test for immediate publish');
+        await page.fill('textarea[name="summary"]', 'Test for immediate publish');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -105,7 +105,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', scheduleTitle);
         await page.fill('input[name="slug"]', scheduleSlug);
-        await page.fill('textarea[name="description"]', 'Test for scheduling');
+        await page.fill('textarea[name="summary"]', 'Test for scheduling');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -137,7 +137,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', unscheduleTitle);
         await page.fill('input[name="slug"]', unscheduleSlug);
-        await page.fill('textarea[name="description"]', 'Test for unscheduling');
+        await page.fill('textarea[name="summary"]', 'Test for unscheduling');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -173,7 +173,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', unpublishTitle);
         await page.fill('input[name="slug"]', unpublishSlug);
-        await page.fill('textarea[name="description"]', 'Test for unpublishing');
+        await page.fill('textarea[name="summary"]', 'Test for unpublishing');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -202,7 +202,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', deleteTitle);
         await page.fill('input[name="slug"]', deleteSlug);
-        await page.fill('textarea[name="description"]', 'Test for deletion');
+        await page.fill('textarea[name="summary"]', 'Test for deletion');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 
@@ -229,7 +229,7 @@ test.describe('Content Lifecycle', () => {
 
         await page.fill('input[name="title"]', protectedTitle);
         await page.fill('input[name="slug"]', protectedSlug);
-        await page.fill('textarea[name="description"]', 'Test protected from deletion');
+        await page.fill('textarea[name="summary"]', 'Test protected from deletion');
         await page.click('button[type="submit"]');
         await page.waitForURL(/\/admin\/content$/, { timeout: 10000 });
 

@@ -8,6 +8,7 @@ export type ContentUpdateRequest = {
     slug?: (string | null);
     summary?: (string | null);
     status?: ('draft' | 'scheduled' | 'published' | 'archived' | null);
+    tier?: ('free' | 'premium' | 'subscriber_only' | null);
     visibility?: ('public' | 'unlisted' | 'private' | null);
     publish_at?: (string | null);
     blocks?: (Array<ContentBlockModel> | null);

@@ -8,6 +8,7 @@ export type ContentCreateRequest = {
     slug: string;
     summary?: (string | null);
     status?: ContentCreateRequest.status;
+    tier?: ContentCreateRequest.tier;
     visibility?: ContentCreateRequest.visibility;
     publish_at?: (string | null);
     type: ContentCreateRequest.type;
@@ -20,6 +21,11 @@ export namespace ContentCreateRequest {
         PUBLISHED = 'published',
         ARCHIVED = 'archived',
     }
+    export enum tier {
+        FREE = 'free',
+        PREMIUM = 'premium',
+        SUBSCRIBER_ONLY = 'subscriber_only',
+    }
     export enum visibility {
         PUBLIC = 'public',
         UNLISTED = 'unlisted',
@@ -28,6 +34,7 @@ export namespace ContentCreateRequest {
     export enum type {
         POST = 'post',
         PAGE = 'page',
+        RESOURCE_PDF = 'resource_pdf',
     }
 }
 

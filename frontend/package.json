@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "playwright test",
+    "test:reader": "playwright test reader-experience.spec.ts",
+    "test:newsletter": "playwright test newsletter.spec.ts",
+    "test:paywall": "playwright test paywall.spec.ts",
+    "test:regression": "playwright test regression.spec.ts",
+    "test:phase1-3": "playwright test reader-experience.spec.ts newsletter.spec.ts paywall.spec.ts regression.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

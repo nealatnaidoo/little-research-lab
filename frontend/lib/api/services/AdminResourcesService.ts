@@ -8,42 +8,19 @@ import type { ResourcePDFUpdateRequest } from '../models/ResourcePDFUpdateReques
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
-
 export class AdminResourcesService {
     /**
      * List Resources
      * List all PDF resources.
-     * @returns ResourcePDFResponse[] Successful Response
+     * @returns ResourcePDFResponse Successful Response
      * @throws ApiError
      */
-    public static listResources(): CancelablePromise<Array<ResourcePDFResponse>> {
+    public static listResourcesApiAdminResourcesGet(): CancelablePromise<Array<ResourcePDFResponse>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/admin/resources',
         });
     }
-
-    /**
-     * Get Resource
-     * Get a specific PDF resource.
-     * @param resourceId
-     * @returns ResourcePDFResponse Successful Response
-     * @throws ApiError
-     */
-    public static getResource(resourceId: string): CancelablePromise<ResourcePDFResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/admin/resources/{resource_id}',
-            path: {
-                'resource_id': resourceId,
-            },
-            errors: {
-                404: `Resource not found`,
-                422: `Validation Error`,
-            },
-        });
-    }
-
     /**
      * Create Resource
      * Create a new PDF resource draft (TA-0014).
@@ -51,7 +28,7 @@ export class AdminResourcesService {
      * @returns ResourcePDFResponse Successful Response
      * @throws ApiError
      */
-    public static createResource(
+    public static createResourceApiAdminResourcesPost(
         requestBody: ResourcePDFCreateRequest,
     ): CancelablePromise<ResourcePDFResponse> {
         return __request(OpenAPI, {
@@ -60,12 +37,31 @@ export class AdminResourcesService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Bad Request`,
                 422: `Validation Error`,
             },
         });
     }
-
+    /**
+     * Get Resource
+     * Get a specific PDF resource.
+     * @param resourceId
+     * @returns ResourcePDFResponse Successful Response
+     * @throws ApiError
+     */
+    public static getResourceApiAdminResourcesResourceIdGet(
+        resourceId: string,
+    ): CancelablePromise<ResourcePDFResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/admin/resources/{resource_id}',
+            path: {
+                'resource_id': resourceId,
+            },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
     /**
      * Update Resource
      * Update an existing PDF resource.
@@ -74,7 +70,7 @@ export class AdminResourcesService {
      * @returns ResourcePDFResponse Successful Response
      * @throws ApiError
      */
-    public static updateResource(
+    public static updateResourceApiAdminResourcesResourceIdPut(
         resourceId: string,
         requestBody: ResourcePDFUpdateRequest,
     ): CancelablePromise<ResourcePDFResponse> {
@@ -87,21 +83,20 @@ export class AdminResourcesService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Bad Request`,
-                404: `Resource not found`,
                 422: `Validation Error`,
             },
         });
     }
-
     /**
      * Delete Resource
      * Delete a PDF resource.
      * @param resourceId
-     * @returns void Successful Response
+     * @returns void
      * @throws ApiError
      */
-    public static deleteResource(resourceId: string): CancelablePromise<void> {
+    public static deleteResourceApiAdminResourcesResourceIdDelete(
+        resourceId: string,
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/admin/resources/{resource_id}',
@@ -109,25 +104,23 @@ export class AdminResourcesService {
                 'resource_id': resourceId,
             },
             errors: {
-                404: `Resource not found`,
                 422: `Validation Error`,
             },
         });
     }
-
     /**
      * Set Pinned Policy
      * Set pinned policy for a resource (TA-0015).
      * @param resourceId
-     * @param policyType "pinned" or "latest"
-     * @param versionId Version ID (required for "pinned" policy)
+     * @param policyType
+     * @param versionId
      * @returns ResourcePDFResponse Successful Response
      * @throws ApiError
      */
-    public static setPinnedPolicy(
+    public static setPinnedPolicyApiAdminResourcesResourceIdPinnedPolicyPost(
         resourceId: string,
-        policyType: 'pinned' | 'latest',
-        versionId?: string | null,
+        policyType: string,
+        versionId?: (string | null),
     ): CancelablePromise<ResourcePDFResponse> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -140,8 +133,6 @@ export class AdminResourcesService {
                 'version_id': versionId,
             },
             errors: {
-                400: `Bad Request`,
-                404: `Resource not found`,
                 422: `Validation Error`,
             },
         });

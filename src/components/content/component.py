@@ -36,7 +36,9 @@ from .models import (
     CreateContentInput,
     DeleteContentInput,
     GetContentInput,
+    GetRelatedInput,
     ListContentInput,
+    RelatedArticlesOutput,
     TransitionContentInput,
     UpdateContentInput,
 )
@@ -568,6 +570,48 @@ def run_delete(
     return ContentOperationOutput(content=None, errors=[], success=True)
 
 
+def run_get_related(
+    inp: GetRelatedInput,
+    *,
+    repo: ContentRepoPort,
+) -> RelatedArticlesOutput:
+    """
+    Get related articles for a content item (TA-0097-0099).
+
+    Returns recent published articles, excluding the current content.
+    For MVP, uses chronological fallback (most recent published first).
+    Future: support manual_related_ids for curated related articles.
+
+    Args:
+        inp: Input containing content_id and limit.
+        repo: Content repository port.
+
+    Returns:
+        RelatedArticlesOutput with related articles.
+    """
+    try:
+        articles = repo.get_related_published(
+            exclude_id=inp.content_id,
+            limit=inp.limit,
+        )
+        return RelatedArticlesOutput(
+            articles=articles,
+            errors=[],
+            success=True,
+        )
+    except Exception as e:
+        return RelatedArticlesOutput(
+            articles=[],
+            errors=[
+                ContentValidationError(
+                    code="related_articles_error",
+                    message=f"Failed to fetch related articles: {e}",
+                )
+            ],
+            success=False,
+        )
+
+
 def run(
     inp: (
         GetContentInput
@@ -576,13 +620,14 @@ def run(
         | UpdateContentInput
         | TransitionContentInput
         | DeleteContentInput
+        | GetRelatedInput
     ),
     *,
     repo: ContentRepoPort,
     time: TimePort | None = None,
     rules: RulesPort | None = None,
     asset_resolver: AssetResolverPort | None = None,
-) -> ContentOutput | ContentListOutput | ContentOperationOutput:
+) -> ContentOutput | ContentListOutput | ContentOperationOutput | RelatedArticlesOutput:
     """
     Main entry point for the content component.
 
@@ -621,6 +666,9 @@ def run(
 
     elif isinstance(inp, DeleteContentInput):
         return run_delete(inp, repo=repo)
+
+    elif isinstance(inp, GetRelatedInput):
+        return run_get_related(inp, repo=repo)
 
     else:
         raise ValueError(f"Unknown input type: {type(inp)}")

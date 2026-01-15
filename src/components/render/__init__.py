@@ -41,9 +41,16 @@ from src.core.services.resource_pdf import (
 )
 
 from ._impl import (
+    DEFAULT_FACEBOOK_IMAGE_CONFIG,
+    DEFAULT_TWITTER_IMAGE_CONFIG,
+    ImageDimensionConfig,
     PageMetadata,
     RenderService,
     create_render_service,
+    generate_opengraph_meta,
+    generate_social_meta_tags,
+    generate_twitter_card_meta,
+    validate_image_dimensions,
 )
 from .component import (
     run,
@@ -52,14 +59,19 @@ from .component import (
     run_page_metadata,
 )
 from .models import (
+    ImageDimensions,
     MetaTag,
+    OpenGraphMeta,
     RenderContentMetadataInput,
     RenderHomepageMetadataInput,
     RenderOutput,
     RenderPageMetadataInput,
     RenderValidationError,
+    SocialMetaInput,
+    SocialMetaOutput,
+    TwitterCardMeta,
 )
-from .ports import RulesPort, SettingsPort
+from .ports import RulesPort, SettingsPort, SocialMetaRulesPort
 
 __all__ = [
     # Entry points
@@ -76,9 +88,24 @@ __all__ = [
     "PageMetadata",
     "RenderOutput",
     "RenderValidationError",
+    # Social meta models (E15.3)
+    "ImageDimensions",
+    "SocialMetaInput",
+    "SocialMetaOutput",
+    "TwitterCardMeta",
+    "OpenGraphMeta",
+    # Social meta functions (TA-0072, TA-0073)
+    "generate_twitter_card_meta",
+    "generate_opengraph_meta",
+    "generate_social_meta_tags",
+    "validate_image_dimensions",
+    "ImageDimensionConfig",
+    "DEFAULT_TWITTER_IMAGE_CONFIG",
+    "DEFAULT_FACEBOOK_IMAGE_CONFIG",
     # Ports
     "RulesPort",
     "SettingsPort",
+    "SocialMetaRulesPort",
     # Legacy _impl re-exports
     "RenderService",
     "create_render_service",

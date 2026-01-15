@@ -96,3 +96,77 @@ class RenderOutput:
     metadata: PageMetadata | None
     errors: list[RenderValidationError] = field(default_factory=list)
     success: bool = True
+
+
+# --- Social Meta Tag Models (E15.3) ---
+
+
+@dataclass(frozen=True)
+class ImageDimensions:
+    """Image dimensions for validation."""
+
+    width: int
+    height: int
+
+
+@dataclass(frozen=True)
+class SocialMetaInput:
+    """
+    Input for generating social meta tags (TA-0072, TA-0073).
+
+    Used to generate Twitter Card and OpenGraph tags for content sharing.
+    """
+
+    title: str
+    description: str
+    canonical_url: str
+    site_name: str
+    content_type: str = "article"  # "article" for content, "website" for homepage
+    image_url: str | None = None
+    image_alt: str | None = None
+    image_dimensions: ImageDimensions | None = None  # For validation
+
+
+@dataclass(frozen=True)
+class TwitterCardMeta:
+    """
+    Twitter Card meta tags (TA-0072).
+
+    Generates twitter:card, twitter:title, twitter:description, twitter:image tags.
+    """
+
+    card_type: str  # "summary" or "summary_large_image"
+    title: str
+    description: str
+    image_url: str | None = None
+    image_alt: str | None = None
+    image_valid: bool = True  # False if image doesn't meet min dimensions
+
+
+@dataclass(frozen=True)
+class OpenGraphMeta:
+    """
+    OpenGraph meta tags (TA-0073).
+
+    Generates og:type, og:title, og:description, og:image, og:url tags.
+    """
+
+    og_type: str  # "article" or "website"
+    title: str
+    description: str
+    url: str
+    site_name: str
+    image_url: str | None = None
+    image_alt: str | None = None
+    image_valid: bool = True  # False if image doesn't meet min dimensions
+
+
+@dataclass(frozen=True)
+class SocialMetaOutput:
+    """Output containing generated social meta tags."""
+
+    twitter: TwitterCardMeta
+    og: OpenGraphMeta
+    warnings: list[str] = field(default_factory=list)  # e.g., "Image too small for Twitter"
+    errors: list[RenderValidationError] = field(default_factory=list)
+    success: bool = True
