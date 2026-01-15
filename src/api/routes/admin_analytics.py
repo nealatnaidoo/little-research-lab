@@ -10,19 +10,19 @@ Test assertions:
 - E14: Engagement data queries
 """
 
+import os
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
-import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
+from src.adapters.sqlite_db import SQLiteEngagementRepo
 from src.components.analytics._aggregate import (
     AggregateService,
     BucketType,
     InMemoryAggregateRepo,
 )
-from src.adapters.sqlite_db import SQLiteEngagementRepo
 from src.components.engagement import EngagementRepoPort
 
 router = APIRouter()
@@ -489,8 +489,8 @@ def get_dashboard(
     engagement_data = None
     try:
         engagement_totals = engagement_repo.get_totals(
-            start_date=start_dt.date(),
-            end_date=end_dt.date(),
+            start_date=start_dt,
+            end_date=end_dt,
         )
         total_sessions = engagement_totals.get("total_sessions", 0) or 0
         engaged_sessions = engagement_totals.get("engaged_sessions", 0) or 0
@@ -578,8 +578,8 @@ def get_engagement_totals(
     content_uuid = UUID(content_id) if content_id else None
 
     totals = engagement_repo.get_totals(
-        start_date=start_dt.date(),
-        end_date=end_dt.date(),
+        start_date=start_dt,
+        end_date=end_dt,
         content_id=content_uuid,
     )
 
@@ -615,8 +615,9 @@ def get_engagement_distribution(
     content_uuid = UUID(content_id) if content_id else None
 
     distribution = engagement_repo.get_distribution(
-        start_date=start_dt.date(),
-        end_date=end_dt.date(),
+        distribution_type="combined",
+        start_date=start_dt,
+        end_date=end_dt,
         content_id=content_uuid,
     )
 
@@ -651,8 +652,8 @@ def get_top_engaged_content(
         start_dt, end_dt = get_default_time_range()
 
     top = engagement_repo.get_top_engaged_content(
-        start_date=start_dt.date(),
-        end_date=end_dt.date(),
+        start_date=start_dt,
+        end_date=end_dt,
         limit=limit,
     )
 

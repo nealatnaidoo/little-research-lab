@@ -6,6 +6,7 @@ Spec refs: E2, E3, E4, SM1
 
 from __future__ import annotations
 
+import builtins
 from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
@@ -39,8 +40,22 @@ class ContentRepoPort(Protocol):
         status: ContentStatus | None = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[list[ContentItem], int]:
+    ) -> tuple[builtins.list[ContentItem], int]:
         """List content with filters. Returns (items, total_count)."""
+        ...
+
+    def get_related_published(
+        self,
+        *,
+        exclude_id: UUID,
+        limit: int = 3,
+    ) -> builtins.list[ContentItem]:
+        """
+        Get related published content, excluding the given ID.
+
+        Returns recent published content ordered by published_at DESC.
+        Used for "related articles" feature.
+        """
         ...
 
 

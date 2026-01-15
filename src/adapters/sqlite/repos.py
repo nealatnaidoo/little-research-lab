@@ -157,6 +157,18 @@ class SQLiteContentRepo:
     def delete(self, item_id: UUID) -> None:
         conn = self._get_conn()
         try:
+            # Delete related records first (handles DBs without ON DELETE CASCADE)
+            item_id_str = str(item_id)
+            conn.execute(
+                "DELETE FROM content_blocks WHERE content_item_id = ?", (item_id_str,)
+            )
+            conn.execute(
+                "DELETE FROM collaboration_grants WHERE content_item_id = ?",
+                (item_id_str,),
+            )
+            conn.execute(
+                "DELETE FROM publish_jobs WHERE content_id = ?", (item_id_str,)
+            )
             conn.execute("DELETE FROM content_items WHERE id = ?", (str(item_id),))
             conn.commit()
         finally:
@@ -222,6 +234,33 @@ class SQLiteContentRepo:
         # Just use list() with defaults
         items, _ = self.list(content_type=ct, status=st, limit=100)
         return items
+
+    def get_related_published(
+        self,
+        *,
+        exclude_id: UUID,
+        limit: int = 3,
+    ) -> builtins.list[ContentItem]:
+        """Get related published content, excluding the given ID."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """
+                SELECT id FROM content_items
+                WHERE status = 'published' AND id != ?
+                ORDER BY published_at DESC
+                LIMIT ?
+                """,
+                (str(exclude_id), limit),
+            ).fetchall()
+            items = []
+            for row in rows:
+                item = self.get_by_id(UUID(row["id"]))
+                if item:
+                    items.append(item)
+            return items
+        finally:
+            conn.close()
 
 
 class SQLiteAssetRepo:

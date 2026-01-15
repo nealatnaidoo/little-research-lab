@@ -7,11 +7,9 @@ Test assertions: TA-0058, TA-0059, TA-0060
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
-
-import pytest
 
 from ..component import (
     bucket_scroll_depth,
@@ -29,8 +27,6 @@ from ..models import (
     QueryEngagementTotalsInput,
     QueryTopEngagedContentInput,
 )
-from ..ports import EngagementRepoPort, EngagementRulesPort, TimePort
-
 
 # --- Test Fixtures ---
 
@@ -39,7 +35,7 @@ class FakeTimePort:
     """Fake time port for testing."""
 
     def __init__(self, fixed_time: datetime | None = None):
-        self._now = fixed_time or datetime(2026, 1, 14, 12, 0, 0, tzinfo=timezone.utc)
+        self._now = fixed_time or datetime(2026, 1, 14, 12, 0, 0, tzinfo=UTC)
 
     def now_utc(self) -> datetime:
         return self._now
@@ -51,7 +47,7 @@ class FakeTimePort:
 class FakeEngagementRepo:
     """Fake engagement repo for testing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.sessions: list[dict[str, Any]] = []
 
     def store_session(
@@ -114,10 +110,10 @@ class FakeEngagementRepo:
             content_stats[cid]["total_sessions"] += 1
             if session["is_engaged"]:
                 content_stats[cid]["engaged_sessions"] += 1
-        result = [
+        result: list[dict[str, Any]] = [
             {"content_id": cid, **stats} for cid, stats in content_stats.items()
         ]
-        result.sort(key=lambda x: x["engaged_sessions"], reverse=True)
+        result.sort(key=lambda x: x.get("engaged_sessions", 0), reverse=True)
         return result[:limit]
 
 
@@ -146,34 +142,34 @@ class FakeEngagementRules:
 class TestEngagementThreshold:
     """Tests for TA-0058: Engagement threshold calculation."""
 
-    def test_engaged_meets_both_thresholds(self):
+    def test_engaged_meets_both_thresholds(self) -> None:
         """Session with 30s+ and 25%+ scroll is engaged."""
         assert is_engaged_session(30, 25) is True
         assert is_engaged_session(60, 50) is True
         assert is_engaged_session(300, 100) is True
 
-    def test_not_engaged_insufficient_time(self):
+    def test_not_engaged_insufficient_time(self) -> None:
         """Session with <30s is not engaged even with high scroll."""
         assert is_engaged_session(29, 100) is False
         assert is_engaged_session(10, 75) is False
         assert is_engaged_session(0, 50) is False
 
-    def test_not_engaged_insufficient_scroll(self):
+    def test_not_engaged_insufficient_scroll(self) -> None:
         """Session with <25% scroll is not engaged even with long time."""
         assert is_engaged_session(300, 24) is False
         assert is_engaged_session(60, 10) is False
         assert is_engaged_session(120, 0) is False
 
-    def test_not_engaged_fails_both(self):
+    def test_not_engaged_fails_both(self) -> None:
         """Session failing both thresholds is not engaged."""
         assert is_engaged_session(10, 10) is False
         assert is_engaged_session(0, 0) is False
 
-    def test_engaged_exactly_at_threshold(self):
+    def test_engaged_exactly_at_threshold(self) -> None:
         """Session exactly at thresholds is engaged."""
         assert is_engaged_session(30, 25) is True
 
-    def test_custom_thresholds(self):
+    def test_custom_thresholds(self) -> None:
         """Custom thresholds are respected."""
         # Custom: 60s minimum, 50% scroll minimum
         assert is_engaged_session(60, 50, min_time_seconds=60, min_scroll_percent=50) is True
@@ -187,38 +183,38 @@ class TestEngagementThreshold:
 class TestInputValidation:
     """Tests for TA-0059: Input validation."""
 
-    def test_valid_input(self):
+    def test_valid_input(self) -> None:
         """Valid input produces no errors."""
         errors = validate_engagement_input(30, 50)
         assert len(errors) == 0
 
-    def test_negative_time_rejected(self):
+    def test_negative_time_rejected(self) -> None:
         """Negative time on page is rejected."""
         errors = validate_engagement_input(-1, 50)
         assert len(errors) == 1
         assert errors[0].code == "INVALID_TIME"
         assert errors[0].field_name == "time_on_page_seconds"
 
-    def test_excessive_time_rejected(self):
+    def test_excessive_time_rejected(self) -> None:
         """Time > 3600s is rejected."""
         errors = validate_engagement_input(3601, 50)
         assert len(errors) == 1
         assert errors[0].code == "INVALID_TIME"
 
-    def test_negative_scroll_rejected(self):
+    def test_negative_scroll_rejected(self) -> None:
         """Negative scroll depth is rejected."""
         errors = validate_engagement_input(30, -1)
         assert len(errors) == 1
         assert errors[0].code == "INVALID_SCROLL"
         assert errors[0].field_name == "scroll_depth_percent"
 
-    def test_excessive_scroll_rejected(self):
+    def test_excessive_scroll_rejected(self) -> None:
         """Scroll > 100% is rejected."""
         errors = validate_engagement_input(30, 101)
         assert len(errors) == 1
         assert errors[0].code == "INVALID_SCROLL"
 
-    def test_multiple_errors_returned(self):
+    def test_multiple_errors_returned(self) -> None:
         """Multiple validation errors are all returned."""
         errors = validate_engagement_input(-1, -1)
         assert len(errors) == 2
@@ -226,7 +222,7 @@ class TestInputValidation:
         assert "INVALID_TIME" in codes
         assert "INVALID_SCROLL" in codes
 
-    def test_boundary_values_valid(self):
+    def test_boundary_values_valid(self) -> None:
         """Boundary values (0, 100%, 3600s) are valid."""
         assert len(validate_engagement_input(0, 0)) == 0
         assert len(validate_engagement_input(3600, 100)) == 0
@@ -238,37 +234,37 @@ class TestInputValidation:
 class TestTimeBucketing:
     """Tests for TA-0060: Time bucketing for privacy."""
 
-    def test_time_bucket_0_10(self):
+    def test_time_bucket_0_10(self) -> None:
         """Time 0-9s maps to 0-10s bucket."""
         assert bucket_time_on_page(0) == "0-10s"
         assert bucket_time_on_page(5) == "0-10s"
         assert bucket_time_on_page(9.9) == "0-10s"
 
-    def test_time_bucket_10_30(self):
+    def test_time_bucket_10_30(self) -> None:
         """Time 10-29s maps to 10-30s bucket."""
         assert bucket_time_on_page(10) == "10-30s"
         assert bucket_time_on_page(20) == "10-30s"
         assert bucket_time_on_page(29.9) == "10-30s"
 
-    def test_time_bucket_30_60(self):
+    def test_time_bucket_30_60(self) -> None:
         """Time 30-59s maps to 30-60s bucket."""
         assert bucket_time_on_page(30) == "30-60s"
         assert bucket_time_on_page(45) == "30-60s"
         assert bucket_time_on_page(59.9) == "30-60s"
 
-    def test_time_bucket_60_120(self):
+    def test_time_bucket_60_120(self) -> None:
         """Time 60-119s maps to 60-120s bucket."""
         assert bucket_time_on_page(60) == "60-120s"
         assert bucket_time_on_page(90) == "60-120s"
         assert bucket_time_on_page(119.9) == "60-120s"
 
-    def test_time_bucket_120_300(self):
+    def test_time_bucket_120_300(self) -> None:
         """Time 120-299s maps to 120-300s bucket."""
         assert bucket_time_on_page(120) == "120-300s"
         assert bucket_time_on_page(200) == "120-300s"
         assert bucket_time_on_page(299.9) == "120-300s"
 
-    def test_time_bucket_300_plus(self):
+    def test_time_bucket_300_plus(self) -> None:
         """Time 300s+ maps to 300+s bucket."""
         assert bucket_time_on_page(300) == "300+s"
         assert bucket_time_on_page(600) == "300+s"
@@ -278,31 +274,31 @@ class TestTimeBucketing:
 class TestScrollBucketing:
     """Tests for TA-0060: Scroll bucketing for privacy."""
 
-    def test_scroll_bucket_0_25(self):
+    def test_scroll_bucket_0_25(self) -> None:
         """Scroll 0-24% maps to 0-25% bucket."""
         assert bucket_scroll_depth(0) == "0-25%"
         assert bucket_scroll_depth(10) == "0-25%"
         assert bucket_scroll_depth(24.9) == "0-25%"
 
-    def test_scroll_bucket_25_50(self):
+    def test_scroll_bucket_25_50(self) -> None:
         """Scroll 25-49% maps to 25-50% bucket."""
         assert bucket_scroll_depth(25) == "25-50%"
         assert bucket_scroll_depth(35) == "25-50%"
         assert bucket_scroll_depth(49.9) == "25-50%"
 
-    def test_scroll_bucket_50_75(self):
+    def test_scroll_bucket_50_75(self) -> None:
         """Scroll 50-74% maps to 50-75% bucket."""
         assert bucket_scroll_depth(50) == "50-75%"
         assert bucket_scroll_depth(60) == "50-75%"
         assert bucket_scroll_depth(74.9) == "50-75%"
 
-    def test_scroll_bucket_75_100(self):
+    def test_scroll_bucket_75_100(self) -> None:
         """Scroll 75-100% maps to 75-100% bucket."""
         assert bucket_scroll_depth(75) == "75-100%"
         assert bucket_scroll_depth(90) == "75-100%"
         assert bucket_scroll_depth(100) == "75-100%"
 
-    def test_scroll_clamped_to_range(self):
+    def test_scroll_clamped_to_range(self) -> None:
         """Out of range values are clamped."""
         assert bucket_scroll_depth(-10) == "0-25%"
         assert bucket_scroll_depth(150) == "75-100%"
@@ -314,7 +310,7 @@ class TestScrollBucketing:
 class TestCalculateEngagement:
     """Integration tests for run_calculate."""
 
-    def test_calculate_engaged_session(self):
+    def test_calculate_engaged_session(self) -> None:
         """Engaged session is correctly calculated and stored."""
         content_id = uuid4()
         repo = FakeEngagementRepo()
@@ -343,7 +339,7 @@ class TestCalculateEngagement:
         assert stored["time_bucket"] == "30-60s"
         assert stored["scroll_bucket"] == "75-100%"
 
-    def test_calculate_not_engaged_session(self):
+    def test_calculate_not_engaged_session(self) -> None:
         """Non-engaged session is correctly calculated."""
         content_id = uuid4()
         repo = FakeEngagementRepo()
@@ -361,7 +357,7 @@ class TestCalculateEngagement:
         assert result.time_bucket == "0-10s"
         assert result.scroll_bucket == "0-25%"
 
-    def test_calculate_without_repo_no_storage(self):
+    def test_calculate_without_repo_no_storage(self) -> None:
         """Without repo, session is not stored."""
         inp = CalculateEngagementInput(
             content_id=uuid4(),
@@ -375,7 +371,7 @@ class TestCalculateEngagement:
         assert result.session is not None
         # No way to verify storage without repo - that's the point
 
-    def test_calculate_invalid_input_rejected(self):
+    def test_calculate_invalid_input_rejected(self) -> None:
         """Invalid input returns error without storage."""
         repo = FakeEngagementRepo()
 
@@ -391,12 +387,12 @@ class TestCalculateEngagement:
         assert len(result.errors) == 1
         assert len(repo.sessions) == 0  # Not stored
 
-    def test_calculate_date_truncated_to_day(self):
+    def test_calculate_date_truncated_to_day(self) -> None:
         """Timestamp is truncated to day for privacy (TA-0060)."""
         content_id = uuid4()
         repo = FakeEngagementRepo()
         # Time with specific hour/minute/second
-        time_port = FakeTimePort(datetime(2026, 1, 14, 15, 30, 45, tzinfo=timezone.utc))
+        time_port = FakeTimePort(datetime(2026, 1, 14, 15, 30, 45, tzinfo=UTC))
 
         inp = CalculateEngagementInput(
             content_id=content_id,
@@ -417,7 +413,7 @@ class TestCalculateEngagement:
 class TestQueryTotals:
     """Tests for run_query_totals (TA-0065)."""
 
-    def test_query_totals_empty(self):
+    def test_query_totals_empty(self) -> None:
         """Empty repo returns zero totals."""
         repo = FakeEngagementRepo()
 
@@ -429,7 +425,7 @@ class TestQueryTotals:
         assert result.engaged_sessions == 0
         assert result.engagement_rate == 0.0
 
-    def test_query_totals_with_data(self):
+    def test_query_totals_with_data(self) -> None:
         """Totals are correctly calculated."""
         repo = FakeEngagementRepo()
         content_id = uuid4()
@@ -451,7 +447,7 @@ class TestQueryTotals:
 class TestQueryDistribution:
     """Tests for run_query_distribution (TA-0066)."""
 
-    def test_query_time_distribution(self):
+    def test_query_time_distribution(self) -> None:
         """Time distribution is correctly calculated."""
         repo = FakeEngagementRepo()
         content_id = uuid4()
@@ -472,7 +468,7 @@ class TestQueryDistribution:
         assert bucket_map["30-60s"].count == 2
         assert bucket_map["0-10s"].count == 1
 
-    def test_query_scroll_distribution(self):
+    def test_query_scroll_distribution(self) -> None:
         """Scroll distribution is correctly calculated."""
         repo = FakeEngagementRepo()
         content_id = uuid4()
@@ -493,7 +489,7 @@ class TestQueryDistribution:
 class TestQueryTopEngagedContent:
     """Tests for run_query_top_engaged_content (TA-0065, TA-0066)."""
 
-    def test_query_top_engaged_content(self):
+    def test_query_top_engaged_content(self) -> None:
         """Top engaged content is correctly ranked."""
         repo = FakeEngagementRepo()
         content_a = uuid4()
