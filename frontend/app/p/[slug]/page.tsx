@@ -123,11 +123,15 @@ export default async function PostPage({ params }: PageProps) {
                     </div>
                 </header>
 
-                <article>
+                <article className="prose dark:prose-invert max-w-none">
                     {/* Server-side enforcement: only visible blocks are rendered (I10, R8) */}
-                    {visibleBlocks.map((block) => (
-                        <BlockRenderer key={block.id || block.position} block={block} />
-                    ))}
+                    {visibleBlocks.length > 0 ? (
+                        visibleBlocks.map((block) => (
+                            <BlockRenderer key={block.id || block.position} block={block} />
+                        ))
+                    ) : (
+                        <p className="text-muted-foreground italic">No content available.</p>
+                    )}
                 </article>
 
                 {/* Paywall overlay for gated content */}

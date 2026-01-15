@@ -137,7 +137,7 @@ export function NewsletterSignupInline({
                     <Mail className="h-4 w-4 text-primary" />
                     <span className="font-medium text-sm">{heading}</span>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-2">
+                <form onSubmit={handleSubmit} className="space-y-2" noValidate={true}>
                     <Input
                         type="email"
                         placeholder="you@example.com"
@@ -187,6 +187,7 @@ export function NewsletterSignupInline({
                 <form
                     onSubmit={handleSubmit}
                     className="flex flex-col sm:flex-row gap-3"
+                    noValidate={true}
                 >
                     <Input
                         type="email"

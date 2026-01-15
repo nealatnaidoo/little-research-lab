@@ -32,8 +32,8 @@ export function BlockRenderer({ block }: BlockProps) {
         case "markdown":
             // Handle TipTap JSON format (new) or legacy text format
             let html = "";
-            if (data.tiptap) {
-                // New format: TipTap JSON document
+            if (data.tiptap && data.tiptap.type === "doc" && data.tiptap.content) {
+                // New format: TipTap JSON document (must have type: "doc" and content)
                 try {
                     html = generateHTML(data.tiptap, extensions);
                 } catch (e) {
@@ -43,6 +43,10 @@ export function BlockRenderer({ block }: BlockProps) {
             } else if (data.text) {
                 // Legacy format: raw HTML/text
                 html = data.text;
+            }
+            // Always render a visible element even if content is empty
+            if (!html || html.trim() === "") {
+                return <p className="text-muted-foreground">&nbsp;</p>;
             }
             return (
                 <div
